@@ -640,13 +640,13 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
         <div class="content-head"><h2>Caption my video</h2><p>Upload a video or audio voiceover — Lafzaly transcribes it and writes natural Roman Urdu subtitles, synced to your voice.</p></div>
 
         <div class="panel" id="uploadPanel">
-          <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <label class="dropzone" id="dropzone" for="fileInput" style="display:block;">
             <div class="ic">⇧</div>
             <h4>Drag &amp; drop your video or audio here</h4>
             <p>or click to browse — MP4, MOV, WebM, MP3, WAV</p>
             <input type="file" id="fileInput" accept=".mp4,.mov,.webm,.mp3,.wav,video/*,audio/*">
             <div class="file-types-row"><span>MP4</span><span>MOV</span><span>WebM</span><span>MP3</span><span>WAV</span></div>
-          </div>
+          </label>
           <div id="uploadProgressWrap" class="hidden" style="margin-top:18px;">
             <div class="usage-bar" style="height:8px;"><div id="uploadProgressBar" style="width:0%"></div></div>
             <div class="field-hint" id="uploadProgressLabel">Uploading…</div>
@@ -932,8 +932,8 @@ function showSubview(name){
   const titles = {generate:'Generate', video:'Video Captions', history:'Caption History', saved:'Saved Captions', settings:'Settings'};
   document.getElementById('topbarTitle').textContent = titles[name] || 'Lafzaly';
   document.getElementById('sidebar').classList.remove('open');
-  if(name==='history') renderHistory();
-  if(name==='saved') renderSaved();
+  if(name==='history') syncHistoryFromServer();
+  if(name==='saved') syncSavedFromServer();
   if(name==='settings') updateUsageDisplays();
 }
 function toggleProfileMenu(){ document.getElementById('profileMenu').classList.toggle('open'); }
@@ -1115,10 +1115,16 @@ function saveCard(id){
   btn.textContent = already ? '☆ Save' : '★ Saved';
   if(!already){
     const card = document.getElementById(id);
-    state.saved.push({ id: 'sv'+id, topic: card.dataset.topic, platform: selection.platform, tone: selection.tone, text: cardText(id) });
+    const entry = { id: 'sv'+id, topic: card.dataset.topic, platform: selection.platform, tone: selection.tone, text: cardText(id) };
+    state.saved.push(entry);
     showToast('Caption saved.', 'success');
+    apiPost('/api/saved', { text: entry.text, platform: entry.platform, tone: entry.tone })
+      .then(r => { entry.serverId = r.id; })
+      .catch(() => noteBackendUnavailable());
   } else {
+    const entry = state.saved.find(s=>s.id==='sv'+id);
     state.saved = state.saved.filter(s=>s.id!=='sv'+id);
+    if(entry && entry.serverId){ apiDelete('/api/saved', entry.serverId).catch(()=>{}); }
   }
 }
 function regenerateCard(id){
@@ -1136,16 +1142,78 @@ function regenerateCard(id){
   showToast('Caption regenerated.', 'success');
 }
 
+/* ===================== BACKEND (Turso via /api/*) ===================== */
+// backendAvailable stays null (unknown) until the first real call succeeds
+// or fails, so we only try once per session and never spam retries.
+let backendAvailable = null;
+let backendNoticeShown = false;
+function noteBackendUnavailable(){
+  backendAvailable = false;
+  if(!backendNoticeShown){
+    backendNoticeShown = true;
+    showToast('Running in local-only mode — set up Turso (see README) to save history across devices and refreshes.', 'success');
+  }
+}
+async function apiGet(path){
+  const res = await fetch(path);
+  if(!res.ok) throw new Error('request failed');
+  backendAvailable = true;
+  return res.json();
+}
+async function apiPost(path, body){
+  const res = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok) throw new Error('request failed');
+  backendAvailable = true;
+  return res.json();
+}
+async function apiDelete(path, id){
+  const res = await fetch(`${path}?id=${encodeURIComponent(id)}`, { method:'DELETE' });
+  if(!res.ok) throw new Error('request failed');
+  backendAvailable = true;
+  return res.json();
+}
+
 /* ===================== HISTORY / SAVED ===================== */
 function addToHistory(topic, platform, tone, c){
-  state.history.unshift({
+  const entry = {
     id: 'h'+Date.now()+Math.random().toString(16).slice(2),
     date: new Date(),
     topic, platform, tone,
     caption: `${c.hook} ${c.body}`,
     full: `${c.hook}\n\n${c.body}\n\n${c.cta}\n\n${c.hashtags.join(' ')}`,
     saved: false
-  });
+  };
+  state.history.unshift(entry);
+  if(backendAvailable !== false){
+    apiPost('/api/captions', {
+      topic, platform, contentType: selection.type, tone, length: selection.length,
+      hook: c.hook, body: c.body, cta: c.cta, hashtags: c.hashtags
+    }).then(r => { entry.serverId = r.id; }).catch(() => noteBackendUnavailable());
+  }
+}
+async function syncHistoryFromServer(){
+  if(backendAvailable !== false){
+    try{
+      const data = await apiGet('/api/captions');
+      state.history = data.captions.map(r => ({
+        id: r.id, serverId: r.id, date: new Date(r.created_at.replace(' ','T')+'Z'),
+        topic: r.topic, platform: r.platform, tone: r.tone,
+        caption: `${r.hook} ${r.body}`,
+        full: `${r.hook}\n\n${r.body}\n\n${r.cta || ''}\n\n${(r.hashtags||[]).join(' ')}`,
+        saved: !!r.saved
+      }));
+    } catch(e){ noteBackendUnavailable(); }
+  }
+  renderHistory();
+}
+async function syncSavedFromServer(){
+  if(backendAvailable !== false){
+    try{
+      const data = await apiGet('/api/saved');
+      state.saved = data.saved.map(r => ({ id: r.id, serverId: r.id, topic:'', platform: r.platform, tone: r.tone, text: r.text }));
+    } catch(e){ noteBackendUnavailable(); }
+  }
+  renderSaved();
 }
 function fmtDate(d){
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -1175,9 +1243,11 @@ function historyCopy(id){
   navigator.clipboard.writeText(h.full).then(()=>showToast('Caption copied.','success'));
 }
 function historyDelete(id){
+  const entry = state.history.find(x=>x.id===id);
   state.history = state.history.filter(x=>x.id!==id);
   renderHistory();
   showToast('Removed from history.', 'success');
+  if(entry && entry.serverId){ apiDelete('/api/captions', entry.serverId).catch(()=>{}); }
 }
 function renderSaved(){
   const grid = document.getElementById('savedGrid');
@@ -1193,9 +1263,11 @@ function renderSaved(){
     </div>`).join('');
 }
 function unsaveCaption(id){
+  const entry = state.saved.find(s=>s.id===id);
   state.saved = state.saved.filter(s=>s.id!==id);
   renderSaved();
   showToast('Removed from saved.', 'success');
+  if(entry && entry.serverId){ apiDelete('/api/saved', entry.serverId).catch(()=>{}); }
 }
 
 /* ===================== AUTH ===================== */
