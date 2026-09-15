@@ -862,6 +862,14 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
 
 <div class="toast-stack" id="toastStack"></div>
 
+<script type="module">
+  // Loads Vercel Blob's client-upload helper from a CDN so the browser can
+  // send large video files directly to Blob storage (bypassing the ~4.5MB
+  // limit a normal serverless function request would hit). Exposed on
+  // window so the main (non-module) script below can call it.
+  import { upload } from 'https://esm.sh/@vercel/blob@0.27.1/client';
+  window.__vercelBlobUpload = upload;
+</script>
 <script>
 /* ===================== STATE ===================== */
 const state = {
@@ -1368,10 +1376,135 @@ function handleFile(file){
     return;
   }
   state.video.file = file;
-  simulateUpload(file);
+  state.video.url = URL.createObjectURL(file);
+  getMediaDuration(state.video.url).then(duration => {
+    state.video.duration = duration;
+    const minutesNeeded = duration / 60;
+    if(state.usage.videoUsed + minutesNeeded > state.usage.videoMax){
+      showToast(`This file needs ~${minutesNeeded.toFixed(1)} min of transcription, more than your ${(state.usage.videoMax - state.usage.videoUsed).toFixed(1)} remaining daily minutes. Upgrade to Pro for more.`, 'error');
+      return;
+    }
+    if(window.__vercelBlobUpload){ realUpload(file); } else { simulateUploadDemo(file); }
+  });
+}
+function getMediaDuration(url){
+  return new Promise(resolve => {
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.src = url;
+    probe.onloadedmetadata = () => resolve(probe.duration || 12);
+    probe.onerror = () => resolve(12);
+  });
 }
 
-function simulateUpload(file){
+/* ---- REAL pipeline: Vercel Blob upload -> /api/transcribe (Groq Whisper + Roman Urdu rewrite) ---- */
+async function realUpload(file){
+  document.getElementById('uploadProgressWrap').classList.remove('hidden');
+  const bar = document.getElementById('uploadProgressBar');
+  const label = document.getElementById('uploadProgressLabel');
+  bar.style.width = '0%';
+  label.textContent = `Uploading "${file.name}"…`;
+  try{
+    const blob = await window.__vercelBlobUpload(file.name, file, {
+      access: 'public',
+      handleUploadUrl: '/api/blob-upload',
+      onUploadProgress: ({ percentage }) => {
+        bar.style.width = percentage + '%';
+        label.textContent = `Uploading "${file.name}" — ${Math.round(percentage)}%`;
+      }
+    });
+    label.textContent = 'Upload complete';
+    startRealPipeline(blob.url);
+  } catch(err){
+    console.error('Blob upload failed:', err);
+    showToast('Live upload is not set up yet — showing a demo transcript instead. See README to enable real transcription.', 'success');
+    simulateUploadDemo(file);
+  }
+}
+
+async function startRealPipeline(blobUrl){
+  document.getElementById('uploadPanel').classList.add('hidden');
+  document.getElementById('pipelinePanel').classList.remove('hidden');
+  document.getElementById('pipelineSteps').innerHTML = PIPELINE_STAGES.map(s => `
+    <div class="pipe-step" id="stage-${s.key}">
+      <div class="pipe-icon">${s.icon}</div>
+      <div class="pipe-text"><b>${s.title}</b><span>${s.sub}</span></div>
+    </div>`).join('');
+
+  const animation = animatePipelineStages();
+  const request = fetch('/api/transcribe', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ blobUrl })
+  }).then(async r => {
+    const data = await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(data.error || 'Transcription failed.');
+    return data;
+  });
+
+  try{
+    const [, data] = await Promise.all([animation, request]);
+    finishPipelineReal(data);
+  } catch(err){
+    document.getElementById('pipelinePanel').classList.add('hidden');
+    document.getElementById('uploadPanel').classList.remove('hidden');
+    document.getElementById('uploadProgressWrap').classList.add('hidden');
+    showToast(err.message || 'Transcription failed. Please try again.', 'error');
+  }
+}
+
+function animatePipelineStages(){
+  return new Promise(resolve => {
+    let i = 0;
+    function runStage(){
+      if(i>0){
+        const prev = document.getElementById('stage-'+PIPELINE_STAGES[i-1].key);
+        prev.classList.replace('active','done');
+        prev.querySelector('.pipe-icon').textContent = '✓';
+      }
+      if(i >= PIPELINE_STAGES.length){ resolve(); return; }
+      const el = document.getElementById('stage-'+PIPELINE_STAGES[i].key);
+      el.classList.add('active');
+      el.querySelector('.pipe-icon').innerHTML = '<div class="spinner"></div>';
+      i++;
+      setTimeout(runStage, 500 + Math.random()*350);
+    }
+    runStage();
+  });
+}
+
+function finishPipelineReal(data){
+  const rawSegments = data.segments || [];
+  if(!rawSegments.length){
+    document.getElementById('pipelinePanel').classList.add('hidden');
+    document.getElementById('uploadPanel').classList.remove('hidden');
+    showToast('No voice was detected in this file. Please upload a video or audio file containing spoken audio.', 'error');
+    return;
+  }
+  const minutesNeeded = (state.video.duration || 0) / 60;
+  state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
+  updateUsageDisplays();
+
+  state.video.segments = rawSegments.map((s,i) => ({ id:'seg'+i, start:s.start, end:s.end, text:s.text, lang:s.lang }));
+
+  document.getElementById('pipelinePanel').classList.add('hidden');
+  document.getElementById('videoWorkspace').classList.remove('hidden');
+
+  const vid = document.getElementById('previewVideo');
+  vid.src = state.video.url;
+  vid.controls = false;
+  vid.onloadedmetadata = () => { updateTimeLabel(); };
+  vid.ontimeupdate = onVideoTimeUpdate;
+  vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
+
+  document.getElementById('detectedLangTag').textContent = mostCommonLang(state.video.segments);
+  renderTranscript();
+  buildPresetRow();
+  applyStyle();
+  showToast('Transcription complete — Roman Urdu captions are ready to preview.', 'success');
+}
+
+/* ---- DEMO fallback pipeline: used only if Blob/Groq aren't configured yet ---- */
+function simulateUploadDemo(file){
   document.getElementById('uploadProgressWrap').classList.remove('hidden');
   const bar = document.getElementById('uploadProgressBar');
   const label = document.getElementById('uploadProgressLabel');
@@ -1382,53 +1515,29 @@ function simulateUpload(file){
       pct = 100; clearInterval(iv);
       bar.style.width = '100%';
       label.textContent = 'Upload complete';
-      setTimeout(()=> startPipeline(file), 350);
+      setTimeout(()=> startPipelineDemo(file), 350);
     } else {
       bar.style.width = pct+'%';
-      label.textContent = `Uploading “${file.name}” — ${Math.round(pct)}%`;
+      label.textContent = `Uploading "${file.name}" — ${Math.round(pct)}%`;
     }
   }, 220);
 }
 
-function startPipeline(file){
+function startPipelineDemo(file){
   document.getElementById('uploadPanel').classList.add('hidden');
-  const panel = document.getElementById('pipelinePanel');
-  panel.classList.remove('hidden');
-  const stepsEl = document.getElementById('pipelineSteps');
-  stepsEl.innerHTML = PIPELINE_STAGES.map(s => `
+  document.getElementById('pipelinePanel').classList.remove('hidden');
+  document.getElementById('pipelineSteps').innerHTML = PIPELINE_STAGES.map(s => `
     <div class="pipe-step" id="stage-${s.key}">
       <div class="pipe-icon">${s.icon}</div>
       <div class="pipe-text"><b>${s.title}</b><span>${s.sub}</span></div>
     </div>`).join('');
-
-  // load real media metadata (duration) alongside the simulated stages
-  const url = URL.createObjectURL(file);
-  state.video.url = url;
-  const probe = document.createElement('video');
-  probe.preload = 'metadata';
-  probe.src = url;
-  probe.onloadedmetadata = () => { state.video.duration = probe.duration || 12; };
-  probe.onerror = () => { state.video.duration = 12; };
-
-  let i = 0;
-  function runStage(){
-    if(i>0) document.getElementById('stage-'+PIPELINE_STAGES[i-1].key).classList.replace('active','done');
-    if(i>0) document.getElementById('stage-'+PIPELINE_STAGES[i-1].key).querySelector('.pipe-icon').textContent = '✓';
-    if(i >= PIPELINE_STAGES.length){ setTimeout(finishPipeline, 300); return; }
-    const el = document.getElementById('stage-'+PIPELINE_STAGES[i].key);
-    el.classList.add('active');
-    el.querySelector('.pipe-icon').innerHTML = '<div class="spinner"></div>';
-    i++;
-    setTimeout(runStage, 650 + Math.random()*450);
-  }
-  runStage();
+  animatePipelineStages().then(() => setTimeout(()=>finishPipelineDemo(file), 200));
 }
 
-function finishPipeline(){
+function finishPipelineDemo(file){
   const durationSec = state.video.duration || 12;
-  const tooShort = durationSec < 1.2;
-  const nameHint = (state.video.file.name || '').toLowerCase();
-  const noVoice = nameHint.includes('silent') || nameHint.includes('novoice') || tooShort;
+  const nameHint = (file.name || '').toLowerCase();
+  const noVoice = nameHint.includes('silent') || nameHint.includes('novoice') || durationSec < 1.2;
 
   if(noVoice){
     document.getElementById('pipelinePanel').classList.add('hidden');
@@ -1440,17 +1549,9 @@ function finishPipeline(){
 
   const usableSeconds = Math.min(durationSec, 45);
   const minutesNeeded = durationSec / 60;
-  if(state.usage.videoUsed + minutesNeeded > state.usage.videoMax){
-    document.getElementById('pipelinePanel').classList.add('hidden');
-    document.getElementById('uploadPanel').classList.remove('hidden');
-    document.getElementById('uploadProgressWrap').classList.add('hidden');
-    showToast(`This file needs ~${minutesNeeded.toFixed(1)} min of transcription, more than your ${state.usage.videoMax - state.usage.videoUsed} remaining daily minutes. Upgrade to Pro for more.`, 'error');
-    return;
-  }
   state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
   updateUsageDisplays();
 
-  // build segments distributed across the usable duration
   const lineCount = Math.max(3, Math.min(DEMO_LINES.length, Math.round(usableSeconds / 3.2)));
   const seg = usableSeconds / lineCount;
   const segments = [];
@@ -1470,11 +1571,11 @@ function finishPipeline(){
   vid.ontimeupdate = onVideoTimeUpdate;
   vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
 
-  document.getElementById('detectedLangTag').textContent = mostCommonLang(segments);
+  document.getElementById('detectedLangTag').textContent = mostCommonLang(segments) + ' (demo transcript)';
   renderTranscript();
   buildPresetRow();
   applyStyle();
-  showToast('Transcription complete — Roman Urdu captions are ready to preview.', 'success');
+  showToast('Demo transcript ready — connect Groq + Vercel Blob for real transcription (see README).', 'success');
 }
 
 function mostCommonLang(segments){

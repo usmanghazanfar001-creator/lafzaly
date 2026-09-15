@@ -1,110 +1,101 @@
 # Lafzaly — Roman Urdu Caption Generator
 
-A frontend prototype of Lafzaly: an AI-powered Roman Urdu caption and subtitle
-generator for Pakistani creators on TikTok, Instagram Reels, YouTube Shorts and
-<<<<<<< HEAD
-Facebook — now with real, persistent history/saved-captions storage via
-Turso (SQLite-compatible, serverless-friendly).
+A working prototype of Lafzaly: an AI-powered Roman Urdu caption and subtitle
+generator for Pakistani creators. Includes **real** automatic voiceover
+transcription — upload a video, Lafzaly detects the speech, transcribes it,
+and rewrites it as natural Roman Urdu with timestamps — plus a real,
+persistent caption history/saved-captions store.
 
 ## What's in this repo
 
-- `index.html` — the full static app (landing page, dashboard, text generator,
-  video captioning workspace with real playback/sync/SRT-VTT export, history,
-  saved captions, settings, mock auth). No build step.
-- `api/captions.js`, `api/saved.js`, `api/_db.js` — Vercel serverless functions
-  that read/write a Turso database.
-- `sql/schema.sql` — the database schema to run once against your Turso DB.
-- `package.json` — declares the one dependency (`@libsql/client`) so Vercel
-  installs it when building the serverless functions.
+- `index.html` — the full app (landing page, dashboard, text generator,
+  video captioning workspace, history, saved captions, settings, mock auth).
+  No build step.
+- `api/blob-upload.js` — issues short-lived tokens so the browser can upload
+  large video files directly to Vercel Blob storage.
+- `api/transcribe.js` — downloads the uploaded file, sends it to Groq's
+  hosted Whisper for transcription with timestamps, then rewrites each line
+  into natural Roman Urdu via a Groq-hosted LLM.
+- `api/captions.js`, `api/saved.js`, `api/_db.js` — Turso (SQLite) storage for
+  caption history and saved captions.
+- `sql/schema.sql` — database schema, run once against your Turso DB.
+- `package.json` — declares `@libsql/client` and `@vercel/blob`.
 
-## Setting up Turso (one-time)
+## One-time setup
 
-1. Install the Turso CLI and sign up: see https://docs.turso.tech/quickstart
-2. Create a database:
-   ```
-   turso db create lafzaly
-   ```
-3. Get its URL and an auth token:
-   ```
-   turso db show lafzaly --url
-   turso db tokens create lafzaly
-   ```
-4. Run the schema against it:
-   ```
-   turso db shell lafzaly < sql/schema.sql
-   ```
-5. In your Vercel project: Settings → Environment Variables, add:
-   - `TURSO_DATABASE_URL` = the URL from step 3
-   - `TURSO_AUTH_TOKEN` = the token from step 3
-6. Redeploy (Vercel → Deployments → Redeploy, or just push a commit) so the
-   functions pick up the new env vars.
+### 1. Vercel Blob (for video uploads)
+In your Vercel project: **Storage → Create Database → Blob → Create**.
+Vercel automatically adds a `BLOB_READ_WRITE_TOKEN` environment variable —
+nothing else to configure.
 
-Once those two variables are set, caption history and saved captions persist
-in Turso automatically — no frontend changes needed. Until then, the app
-quietly falls back to in-memory storage for the current browser session and
-shows a one-time notice.
+### 2. Groq (for transcription + Roman Urdu conversion) — free to start
+1. Sign up at https://console.groq.com (no card required for the free tier).
+2. Create an API key under **API Keys**.
+3. In Vercel: **Settings → Environment Variables**, add:
+   - `GROQ_API_KEY` = your key
+4. Free tier covers roughly 2,000 transcription requests and ~8 hours of
+   audio per day — plenty for testing and early users. When you outgrow it,
+   Groq's paid tier is the same API with no code changes, or swap in another
+   provider using the same `api/transcribe.js` shape.
 
-## Known limitation: no real authentication yet
+### 3. Turso (for caption history)
+See the "Setting up Turso" steps below — unchanged from before.
 
-The API routes default every request to a single `demo-user` — there's no
-login system wired into the database yet, so **all visitors currently share
-the same history**. The mock login/signup modal in the UI does not create
-real accounts. Before treating this as private, per-user data, add a real
-auth provider (Supabase Auth, Clerk, Auth.js, etc.), pass the authenticated
-user's ID to the API routes instead of `'demo-user'`, and restrict each query
-to that ID.
+1. Install the Turso CLI and sign up: https://docs.turso.tech/quickstart
+2. `turso db create lafzaly`
+3. `turso db show lafzaly --url` and `turso db tokens create lafzaly`
+4. `turso db shell lafzaly < sql/schema.sql`
+5. In Vercel, add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
 
-## AI generation & transcription
+### 4. Redeploy
+Push a commit (or click Redeploy in Vercel) so the functions pick up the new
+environment variables.
 
-Caption generation is a rule/template engine that runs entirely in the
-browser (see `lafzaly-architecture.md`). Video transcription uses a canned
-demo transcript. Swapping in a real LLM and a real Urdu-capable
-speech-to-text API is the next step described in that document — the API
-route pattern here (`api/*.js` + env vars) is the same pattern to follow.
+## How the video pipeline actually works now
+
+```
+Browser                          Vercel                         Groq
+--------                         ------                         ----
+Select file
+  → upload() [Blob client] ───→ /api/blob-upload (issues token)
+  → file bytes go straight to Vercel Blob storage (not through your function)
+  → gets back a blob URL
+  → POST /api/transcribe {blobUrl} ───→ downloads file from Blob
+                                        ───→ Whisper large-v3-turbo (transcription + timestamps)
+                                        ───→ per-segment rewrite into Roman Urdu (Llama 3.3 70B)
+  ← segments [{start, end, text, lang}] ←───
+  → renders synced captions over the real <video> preview
+```
+
+If `GROQ_API_KEY` isn't set yet, or the Blob upload fails for any reason, the
+app automatically falls back to a labeled demo transcript so the UI still
+works end-to-end while you're setting things up — you'll see a toast telling
+you it's in demo mode.
+
+## Known limitations
+
+- **No real per-user accounts yet.** The API routes default every request to
+  a single `demo-user`, so all visitors share one history. The login/signup
+  modal is still a UI mock. Add real auth (Supabase Auth, Clerk, Auth.js,
+  etc.) before treating this as private data.
+- **Whisper's 25MB file-size limit.** Longer or higher-resolution videos may
+  exceed this — `api/transcribe.js` returns a clear error in that case rather
+  than failing silently. Audio-only exports of long content will fit more
+  reliably than full video files.
+- **Burned-in MP4 export** still requires a separate FFmpeg rendering step
+  (see `lafzaly-architecture.md`) — SRT/VTT export works today.
+- **Text caption generation** (the "Generate" tab, separate from video
+  captioning) is still a rule-based template engine, not a live LLM call.
+  Swapping that in follows the same `api/*.js` pattern as `transcribe.js`.
 
 ## Local preview
 
-Just open `index.html` in a browser for the frontend. The `/api/*` routes
-only run once deployed on Vercel (or via `vercel dev` locally).
+Open `index.html` directly for the frontend. The `/api/*` routes only run
+once deployed on Vercel (or via `vercel dev` locally with your env vars
+pulled: `vercel env pull .env.development.local`).
 
 ## Deploy
 
 Push to GitHub, import the repo at vercel.com/new (Framework Preset:
-"Other"), add the two Turso env vars above, and deploy. Every future push to
+"Other"), add the environment variables above, and deploy. Every push to
 `main` redeploys automatically.
-=======
-Facebook.
-
-## What's in this repo
-
-A single static `index.html` (HTML/CSS/vanilla JS, no build step) containing:
-
-- A full marketing landing page
-- A dashboard with a text-to-caption generator (template-based Roman Urdu engine)
-- A video captioning workspace: real file upload, real video playback, live
-  synced caption overlay, editable timestamped transcript, style presets, and
-  real SRT/VTT export
-- Caption history, saved captions, settings, and a mock auth flow
-
-## Status
-
-This is a **frontend prototype**. Video playback, caption sync, and SRT/VTT
-export are fully functional against whatever file you upload. AI caption
-generation and speech-to-text transcription are mocked (template-based /
-canned demo data) so the app runs with no backend or API keys.
-
-See `lafzaly-architecture.md` (in the project docs) for the plan to wire up a
-real backend: Next.js + Supabase (Auth/DB/Storage) + a pluggable AI/speech-to-text
-provider interface + server-side FFmpeg processing.
-
-## Deploy
-
-This repo deploys to Vercel with zero configuration — it's static HTML at the
-root, so Vercel's "Other" framework preset serves it directly. Every push to
-`main` redeploys automatically once the GitHub repo is connected to a Vercel
-project.
-
-## Local preview
-
-Just open `index.html` in a browser — no server or build step required.
->>>>>>> ef118c76aa5cc1674209b9de01e25ec4ac1082f6
