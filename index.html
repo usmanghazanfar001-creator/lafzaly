@@ -869,7 +869,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
   // send large video files directly to Blob storage (bypassing the ~4.5MB
   // limit a normal serverless function request would hit). Exposed on
   // window so the main (non-module) script below can call it.
-  import { upload } from 'https://esm.sh/@vercel/blob@0.27.1/client';
+  import { upload } from 'https://esm.sh/@vercel/blob/client';
   window.__vercelBlobUpload = upload;
 </script>
 <script>
@@ -1420,7 +1420,7 @@ async function realUpload(file){
     startRealPipeline(blob.url);
   } catch(err){
     console.error('Blob upload failed:', err);
-    showToast('Live upload is not set up yet — showing a demo transcript instead. See README to enable real transcription.', 'success');
+    showToast('Real upload failed (' + (err.message || 'unknown error') + ') — showing a demo transcript instead.', 'error');
     simulateUploadDemo(file);
   }
 }
