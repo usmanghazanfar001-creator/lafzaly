@@ -1302,6 +1302,7 @@ function submitAuth(){
   document.getElementById('settingsEmail').value = email;
   closeAuth();
   showToast(authMode==='signup' ? 'Account created — welcome to Lafzaly!' : 'Welcome back!', 'success');
+  enterApp('generate');
 }
 function forgotPassword(){
   const email = document.getElementById('authEmail').value.trim();
