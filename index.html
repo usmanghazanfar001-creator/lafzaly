@@ -1476,34 +1476,41 @@ function animatePipelineStages(){
 }
 
 function finishPipelineReal(data){
-  const rawSegments = data.segments || [];
-  if(!rawSegments.length){
+  try{
+    const rawSegments = data.segments || [];
+    if(!rawSegments.length){
+      document.getElementById('pipelinePanel').classList.add('hidden');
+      document.getElementById('uploadPanel').classList.remove('hidden');
+      showToast('No voice was detected in this file. Please upload a video or audio file containing spoken audio.', 'error');
+      return;
+    }
+    const minutesNeeded = (state.video.duration || 0) / 60;
+    state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
+    updateUsageDisplays();
+
+    state.video.segments = rawSegments.map((s,i) => ({ id:'seg'+i, start:s.start, end:s.end, text:s.text, lang:s.lang }));
+
+    document.getElementById('pipelinePanel').classList.add('hidden');
+    document.getElementById('videoWorkspace').classList.remove('hidden');
+
+    const vid = document.getElementById('previewVideo');
+    vid.src = state.video.url;
+    vid.controls = false;
+    vid.onloadedmetadata = () => { updateTimeLabel(); };
+    vid.ontimeupdate = onVideoTimeUpdate;
+    vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
+
+    document.getElementById('detectedLangTag').textContent = mostCommonLang(state.video.segments);
+    renderTranscript();
+    buildPresetRow();
+    applyStyle();
+    showToast('Transcription complete — Roman Urdu captions are ready to preview.', 'success');
+  } catch(err){
+    console.error('finishPipelineReal failed:', err);
     document.getElementById('pipelinePanel').classList.add('hidden');
     document.getElementById('uploadPanel').classList.remove('hidden');
-    showToast('No voice was detected in this file. Please upload a video or audio file containing spoken audio.', 'error');
-    return;
+    showToast('Something went wrong displaying the transcript: ' + err.message, 'error');
   }
-  const minutesNeeded = (state.video.duration || 0) / 60;
-  state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
-  updateUsageDisplays();
-
-  state.video.segments = rawSegments.map((s,i) => ({ id:'seg'+i, start:s.start, end:s.end, text:s.text, lang:s.lang }));
-
-  document.getElementById('pipelinePanel').classList.add('hidden');
-  document.getElementById('videoWorkspace').classList.remove('hidden');
-
-  const vid = document.getElementById('previewVideo');
-  vid.src = state.video.url;
-  vid.controls = false;
-  vid.onloadedmetadata = () => { updateTimeLabel(); };
-  vid.ontimeupdate = onVideoTimeUpdate;
-  vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
-
-  document.getElementById('detectedLangTag').textContent = mostCommonLang(state.video.segments);
-  renderTranscript();
-  buildPresetRow();
-  applyStyle();
-  showToast('Transcription complete — Roman Urdu captions are ready to preview.', 'success');
 }
 
 /* ---- DEMO fallback pipeline: used only if Blob/Groq aren't configured yet ---- */
@@ -1538,50 +1545,58 @@ function startPipelineDemo(file){
 }
 
 function finishPipelineDemo(file){
-  const durationSec = state.video.duration || 12;
-  const nameHint = (file.name || '').toLowerCase();
-  const noVoice = nameHint.includes('silent') || nameHint.includes('novoice') || durationSec < 1.2;
+  try{
+    const durationSec = state.video.duration || 12;
+    const nameHint = (file.name || '').toLowerCase();
+    const noVoice = nameHint.includes('silent') || nameHint.includes('novoice') || durationSec < 1.2;
 
-  if(noVoice){
+    if(noVoice){
+      document.getElementById('pipelinePanel').classList.add('hidden');
+      document.getElementById('uploadPanel').classList.remove('hidden');
+      document.getElementById('uploadProgressWrap').classList.add('hidden');
+      showToast('No voice was detected in this file. Please upload a video or audio file containing spoken audio.', 'error');
+      return;
+    }
+
+    const usableSeconds = Math.min(durationSec, 45);
+    const minutesNeeded = durationSec / 60;
+    state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
+    updateUsageDisplays();
+
+    const lineCount = Math.max(3, Math.min(DEMO_LINES.length, Math.round(usableSeconds / 3.2)));
+    const seg = usableSeconds / lineCount;
+    const segments = [];
+    for(let k=0;k<lineCount;k++){
+      const d = DEMO_LINES[k % DEMO_LINES.length];
+      segments.push({ id:'seg'+k, start:+(k*seg).toFixed(1), end:+Math.min(durationSec,(k+1)*seg).toFixed(1), text:d.text, lang:d.lang });
+    }
+    state.video.segments = segments;
+
+    document.getElementById('pipelinePanel').classList.add('hidden');
+    document.getElementById('videoWorkspace').classList.remove('hidden');
+
+    const vid = document.getElementById('previewVideo');
+    vid.src = state.video.url;
+    vid.controls = false;
+    vid.onloadedmetadata = () => { updateTimeLabel(); };
+    vid.ontimeupdate = onVideoTimeUpdate;
+    vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
+
+    document.getElementById('detectedLangTag').textContent = mostCommonLang(segments) + ' (demo transcript)';
+    renderTranscript();
+    buildPresetRow();
+    applyStyle();
+    showToast('Demo transcript ready — connect Groq + Vercel Blob for real transcription (see README).', 'success');
+  } catch(err){
+    console.error('finishPipelineDemo failed:', err);
     document.getElementById('pipelinePanel').classList.add('hidden');
     document.getElementById('uploadPanel').classList.remove('hidden');
-    document.getElementById('uploadProgressWrap').classList.add('hidden');
-    showToast('No voice was detected in this file. Please upload a video or audio file containing spoken audio.', 'error');
-    return;
+    showToast('Something went wrong building the demo transcript: ' + err.message, 'error');
   }
-
-  const usableSeconds = Math.min(durationSec, 45);
-  const minutesNeeded = durationSec / 60;
-  state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
-  updateUsageDisplays();
-
-  const lineCount = Math.max(3, Math.min(DEMO_LINES.length, Math.round(usableSeconds / 3.2)));
-  const seg = usableSeconds / lineCount;
-  const segments = [];
-  for(let k=0;k<lineCount;k++){
-    const d = DEMO_LINES[k % DEMO_LINES.length];
-    segments.push({ id:'seg'+k, start:+(k*seg).toFixed(1), end:+Math.min(durationSec,(k+1)*seg).toFixed(1), text:d.text, lang:d.lang });
-  }
-  state.video.segments = segments;
-
-  document.getElementById('pipelinePanel').classList.add('hidden');
-  document.getElementById('videoWorkspace').classList.remove('hidden');
-
-  const vid = document.getElementById('previewVideo');
-  vid.src = state.video.url;
-  vid.controls = false;
-  vid.onloadedmetadata = () => { updateTimeLabel(); };
-  vid.ontimeupdate = onVideoTimeUpdate;
-  vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
-
-  document.getElementById('detectedLangTag').textContent = mostCommonLang(segments) + ' (demo transcript)';
-  renderTranscript();
-  buildPresetRow();
-  applyStyle();
-  showToast('Demo transcript ready — connect Groq + Vercel Blob for real transcription (see README).', 'success');
 }
 
 function mostCommonLang(segments){
+  if(!segments || !segments.length) return 'Unknown';
   const counts = {};
   segments.forEach(s=> counts[s.lang] = (counts[s.lang]||0)+1);
   return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0] + (Object.keys(counts).length>1 ? ' (mixed detected)' : '');
@@ -1589,6 +1604,10 @@ function mostCommonLang(segments){
 
 function renderTranscript(){
   const list = document.getElementById('transcriptList');
+  if(!state.video.segments || !state.video.segments.length){
+    list.innerHTML = `<div class="empty-state"><div class="ic">📝</div><h4>No caption lines yet</h4><p>Something prevented captions from generating for this clip. Try re-uploading, or a different file.</p></div>`;
+    return;
+  }
   list.innerHTML = state.video.segments.map(s => `
     <div class="seg-row" id="row-${s.id}" onclick="jumpToSegment('${s.id}', event)">
       <div class="seg-time">
