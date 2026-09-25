@@ -12,6 +12,8 @@
 <meta name="robots" content="index, follow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&display=swap" rel="stylesheet">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7402751690588915"
+     crossorigin="anonymous"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Lafzaly","applicationCategory":"MultimediaApplication","operatingSystem":"Web","description":"AI-powered Roman Urdu caption and subtitle generator for Pakistani creators.","offers":{"@type":"Offer","price":"0","priceCurrency":"PKR"}}
 </script>
@@ -518,16 +520,16 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
         <button class="btn btn-primary btn-block" onclick="enterApp('generate')">Get started free</button>
       </div>
       <div class="price-card pro">
-        <span class="price-plan-name">PRO <span class="badge-soon">Coming soon</span></span>
-        <div class="price-amt">Rs —<span>/month</span></div>
+        <span class="price-plan-name">LAFZALY PRO</span>
+        <div class="price-amt">$1<span>/month</span></div>
         <div class="price-list">
-          <div>✓ Unlimited text captions</div>
-          <div>✓ Extended video transcription minutes</div>
-          <div>✓ VTT export + burned-in MP4 export</div>
-          <div>✓ All styling presets &amp; word highlighting</div>
-          <div>✓ Priority processing</div>
+          <div>✓ 3 full videos/day, up to 4 minutes each</div>
+          <div>✓ Roman Urdu + Urdu + English mixed speech</div>
+          <div>✓ Synchronized, word-timed captions</div>
+          <div>✓ All styling presets</div>
+          <div>✓ Captioned video &amp; SRT download</div>
         </div>
-        <button class="btn btn-block" style="background:rgba(255,255,255,.1); color:var(--paper);" disabled>Notify me</button>
+        <button class="btn btn-block" style="background:var(--marigold);color:var(--ink);font-weight:700;" onclick="startProCheckout()">Get Pro — $1/month</button>
       </div>
     </div>
   </div>
@@ -565,18 +567,19 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
   <aside class="app-sidebar" id="sidebar">
     <div class="logo"><span class="mark">ل</span>Lafzaly</div>
     <a class="side-link" data-nav="generate" onclick="showSubview('generate')"><span class="ic">✎</span>Generate</a>
-    <a class="side-link" data-nav="video" onclick="showSubview('video')"><span class="ic">🎬</span>Video Captions</a>
+    <a class="side-link" data-nav="video" onclick="goToVideoSubview()"><span class="ic">🎬</span>Video Captions</a>
     <div class="side-section-label">Library</div>
     <a class="side-link" data-nav="history" onclick="showSubview('history')"><span class="ic">🕘</span>Caption History</a>
     <a class="side-link" data-nav="saved" onclick="showSubview('saved')"><span class="ic">★</span>Saved Captions</a>
     <div class="side-section-label">Account</div>
     <a class="side-link" data-nav="settings" onclick="showSubview('settings')"><span class="ic">⚙</span>Settings</a>
+    <a class="side-link hidden" data-nav="admin" id="adminSideLink" onclick="goToAdminSubview()"><span class="ic">🛡</span>Admin</a>
     <div class="sidebar-foot">
-      <div class="usage-mini">
+      <div class="usage-mini" id="usageMiniPanel">
         <div class="row"><span>Text today</span><span id="miniTextUse">0/10</span></div>
         <div class="usage-bar"><div id="miniTextBar" style="width:0%"></div></div>
-        <div class="row"><span>Video mins today</span><span id="miniVideoUse">0/3</span></div>
-        <div class="usage-bar"><div id="miniVideoBar" style="width:0%"></div></div>
+        <div class="row" id="miniVideoRow"><span id="miniVideoLabel">Video mins today</span><span id="miniVideoUse">0/3</span></div>
+        <div class="usage-bar" id="miniVideoBarWrap"><div id="miniVideoBar" style="width:0%"></div></div>
       </div>
       <a class="back-to-site" onclick="backToSite()">← Back to lafzaly.com</a>
     </div>
@@ -646,6 +649,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
             <div class="ic">⇧</div>
             <h4>Drag &amp; drop your video or audio here</h4>
             <p>or click to browse — MP4, MOV, WebM, MP3, WAV</p>
+            <p style="margin-top:4px;font-weight:600;">Maximum video length: 4 minutes</p>
             <input type="file" id="fileInput" accept=".mp4,.mov,.webm,.mp3,.wav,video/*,audio/*">
             <div class="file-types-row"><span>MP4</span><span>MOV</span><span>WebM</span><span>MP3</span><span>WAV</span></div>
           </label>
@@ -825,17 +829,54 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
               <div class="usage-bar"><div id="settingsTextBar" style="width:0%"></div></div>
             </div>
             <div class="field-block">
-              <div class="row" style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px;"><span>Video minutes today</span><span id="settingsVideoUse">0 / 3</span></div>
+              <div class="row" style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px;" id="settingsVideoRow"><span id="settingsVideoLabel">Video minutes today</span><span id="settingsVideoUse">0 / 3</span></div>
               <div class="usage-bar"><div id="settingsVideoBar" style="width:0%"></div></div>
             </div>
-            <div class="field-hint">Free plan resets daily at midnight. Limits are configurable server-side — see Architecture doc.</div>
+            <div class="field-hint" id="settingsPlanHint">Free plan resets daily (UTC). Video captioning requires an account.</div>
+          </div>
+          <div class="panel settings-block" id="proUpgradeCard">
+            <label class="field-label">Lafzaly Pro</label>
+            <div style="font-family:var(--font-display);font-weight:800;font-size:30px;margin:8px 0 2px;">$1<span style="font-size:14px;font-weight:500;color:var(--dark-text-dim);"> / month</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--dark-text-dim);margin:14px 0 18px;">
+              <div>✓ 3 full videos/day, up to 4 minutes each</div>
+              <div>✓ Roman Urdu + Urdu + English mixed speech</div>
+              <div>✓ Synchronized captions, styling presets</div>
+              <div>✓ SRT/VTT download</div>
+            </div>
+            <button class="btn btn-marigold btn-block" id="proUpgradeBtn" onclick="startProCheckout()">Get Pro — $1/month</button>
+            <div class="field-hint" id="proStatusHint" style="margin-top:10px;"></div>
           </div>
           <div class="panel settings-block">
             <label class="field-label">Server integration status</label>
             <div class="field-hint" style="margin-bottom:14px;">Configured via environment variables on the server — never exposed to the browser.</div>
-            <div class="env-key-row"><code>SPEECH_TO_TEXT_API_KEY</code><span class="status">Not connected — demo mode</span></div>
-            <div class="env-key-row"><code>AI_API_KEY</code><span class="status">Not connected — demo mode</span></div>
-            <div class="env-key-row"><code>SUPABASE_URL / SUPABASE_ANON_KEY</code><span class="status">Not connected — demo mode</span></div>
+            <div class="env-key-row"><code>GROQ_API_KEY</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>BLOB_READ_WRITE_TOKEN</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>DATABASE_URL</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>JWT_SECRET</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>STRIPE_SECRET_KEY / STRIPE_PRICE_ID / STRIPE_WEBHOOK_SECRET</code><span class="status">See README</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN ===== -->
+      <div class="app-subview" id="subview-admin">
+        <div class="content-head"><h2>Admin</h2><p>Users, usage, and generation jobs — visible only to admin accounts (checked server-side).</p></div>
+        <div class="panel" style="margin-bottom:20px;">
+          <label class="field-label">Users</label>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Plan</th><th>Videos today</th><th>Minutes today</th><th>Joined</th></tr></thead>
+              <tbody id="adminUsersBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <label class="field-label">Recent generation jobs <span class="pill-sm" id="adminFailedPill"></span></label>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>File</th><th>Duration</th><th>Status</th><th>Error</th><th>Created</th></tr></thead>
+              <tbody id="adminJobsBody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -880,6 +921,7 @@ const state = {
   saved: [],
   authed: false,
   userLabel: 'G',
+  currentUser: null,
   theme: 'dark',
   video: {
     file: null, url: null, duration: 0, segments: [], style: {},
@@ -923,6 +965,11 @@ function showToast(msg, type){
 
 /* ===================== VIEW ROUTING ===================== */
 function enterApp(view){
+  if(view === 'video' && !state.currentUser){
+    openAuth('login', 'video');
+    showToast('Please log in to caption a video.', 'success');
+    return;
+  }
   document.getElementById('view-landing').classList.remove('active');
   document.getElementById('view-app').classList.add('active');
   showSubview(view || 'generate');
@@ -939,12 +986,105 @@ function showSubview(name){
   document.querySelectorAll('.side-link').forEach(l=>l.classList.remove('active'));
   const link = document.querySelector('.side-link[data-nav="'+name+'"]');
   if(link) link.classList.add('active');
-  const titles = {generate:'Generate', video:'Video Captions', history:'Caption History', saved:'Saved Captions', settings:'Settings'};
+  const titles = {generate:'Generate', video:'Video Captions', history:'Caption History', saved:'Saved Captions', settings:'Settings', admin:'Admin'};
   document.getElementById('topbarTitle').textContent = titles[name] || 'Lafzaly';
   document.getElementById('sidebar').classList.remove('open');
   if(name==='history') syncHistoryFromServer();
   if(name==='saved') syncSavedFromServer();
-  if(name==='settings') updateUsageDisplays();
+  if(name==='settings') { updateUsageDisplays(); updatePlanBadges(); }
+  if(name==='admin') loadAdminData();
+}
+function goToVideoSubview(){
+  if(!requireLogin('video')) return;
+  showSubview('video');
+}
+function goToAdminSubview(){
+  if(!state.currentUser || state.currentUser.role !== 'admin'){ showToast('Admin access required.', 'error'); return; }
+  showSubview('admin');
+}
+async function loadAdminData(){
+  const usersBody = document.getElementById('adminUsersBody');
+  const jobsBody = document.getElementById('adminJobsBody');
+  usersBody.innerHTML = `<tr><td colspan="6">Loading…</td></tr>`;
+  jobsBody.innerHTML = `<tr><td colspan="6">Loading…</td></tr>`;
+  try{
+    const res = await fetch('/api/admin-stats');
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Could not load admin data.');
+    document.getElementById('adminFailedPill').textContent = `${data.failedToday} failed today`;
+    usersBody.innerHTML = data.users.map(u => `
+      <tr><td>${u.email}</td><td><span class="pill-sm">${u.role}</span></td>
+        <td><span class="pill-sm">${u.subscription_status==='active' ? (u.subscription_plan||'pro') : 'free'}</span></td>
+        <td>${u.videos_today}</td><td>${Number(u.minutes_today||0).toFixed(1)}</td>
+        <td>${new Date(u.created_at.replace(' ','T')+'Z').toLocaleDateString()}</td></tr>`).join('') || `<tr><td colspan="6">No users yet.</td></tr>`;
+    jobsBody.innerHTML = data.jobs.map(j => `
+      <tr><td>${j.email||j.user_id}</td><td>${j.original_filename||'—'}</td>
+        <td>${j.duration_seconds ? Number(j.duration_seconds).toFixed(0)+'s' : '—'}</td>
+        <td><span class="pill-sm">${j.status}</span></td><td>${j.error||'—'}</td>
+        <td>${new Date(j.created_at.replace(' ','T')+'Z').toLocaleString()}</td></tr>`).join('') || `<tr><td colspan="6">No jobs yet.</td></tr>`;
+  } catch(err){
+    usersBody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
+    jobsBody.innerHTML = '';
+  }
+}
+function updatePlanBadges(){
+  const u = state.currentUser;
+  const videoLabel = document.getElementById('miniVideoLabel');
+  const settingsLabel = document.getElementById('settingsVideoLabel');
+  const proBtn = document.getElementById('proUpgradeBtn');
+  const proHint = document.getElementById('proStatusHint');
+  const proCard = document.getElementById('proUpgradeCard');
+  const setBars = (pct) => {
+    document.getElementById('miniVideoBar').style.width = pct+'%';
+    const sb = document.getElementById('settingsVideoBar'); if(sb) sb.style.width = pct+'%';
+  };
+  if(!u){
+    if(videoLabel) videoLabel.textContent = 'Video captions';
+    document.getElementById('miniVideoUse').textContent = 'Log in';
+    if(settingsLabel) settingsLabel.textContent = 'Video captions';
+    document.getElementById('settingsVideoUse').textContent = 'Log in required';
+    setBars(0);
+    return;
+  }
+  if(u.role === 'admin'){
+    if(videoLabel) videoLabel.textContent = 'Videos today';
+    document.getElementById('miniVideoUse').textContent = `${u.videosToday} (unlimited)`;
+    if(settingsLabel) settingsLabel.textContent = 'Videos today';
+    document.getElementById('settingsVideoUse').textContent = `${u.videosToday} (unlimited — admin)`;
+    if(proCard) proCard.classList.add('hidden');
+    setBars(0);
+  } else if(u.isPro){
+    if(videoLabel) videoLabel.textContent = 'Videos today';
+    document.getElementById('miniVideoUse').textContent = `${u.videosToday}/${u.videoDailyLimit}`;
+    if(settingsLabel) settingsLabel.textContent = 'Videos today';
+    document.getElementById('settingsVideoUse').textContent = `${u.videosToday} / ${u.videoDailyLimit}`;
+    if(proBtn){ proBtn.textContent = 'You are on Pro'; proBtn.disabled = true; }
+    if(proHint) proHint.textContent = 'Your Pro subscription is active.';
+    setBars(Math.min(100, (u.videosToday/u.videoDailyLimit)*100));
+  } else {
+    if(videoLabel) videoLabel.textContent = 'Video mins today';
+    document.getElementById('miniVideoUse').textContent = `${(u.minutesToday||0).toFixed(1)}/3`;
+    if(settingsLabel) settingsLabel.textContent = 'Video minutes today';
+    document.getElementById('settingsVideoUse').textContent = `${(u.minutesToday||0).toFixed(1)} / 3`;
+    if(proCard) proCard.classList.remove('hidden');
+    if(proBtn){ proBtn.textContent = 'Get Pro — $1/month'; proBtn.disabled = false; }
+    if(proHint) proHint.textContent = '';
+    setBars(Math.min(100, ((u.minutesToday||0)/3)*100));
+  }
+}
+async function startProCheckout(){
+  if(!requireLogin('settings')) return;
+  const btn = document.getElementById('proUpgradeBtn');
+  btn.disabled = true; btn.textContent = 'Starting checkout…';
+  try{
+    const res = await fetch('/api/billing-checkout', { method:'POST' });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Could not start checkout.');
+    window.location.href = data.url;
+  } catch(err){
+    showToast(err.message, 'error');
+    btn.disabled = false; btn.textContent = 'Get Pro — $1/month';
+  }
 }
 function toggleProfileMenu(){ document.getElementById('profileMenu').classList.toggle('open'); }
 document.addEventListener('click', e=>{
@@ -956,20 +1096,17 @@ document.addEventListener('click', e=>{
 
 /* ===================== USAGE ===================== */
 function updateUsageDisplays(){
+  // Text-caption usage only — video usage is now server-authoritative and
+  // handled entirely by updatePlanBadges() (see AUTH section), since it
+  // depends on the logged-in user's real plan, not a local counter.
   const u = state.usage;
   const textPct = Math.min(100, (u.textUsed/u.textMax)*100);
-  const videoPct = Math.min(100, (u.videoUsed/u.videoMax)*100);
   document.getElementById('miniTextUse').textContent = `${u.textUsed}/${u.textMax}`;
   document.getElementById('miniTextBar').style.width = textPct+'%';
   document.getElementById('miniTextBar').parentElement.classList.toggle('warn', textPct>70);
-  document.getElementById('miniVideoUse').textContent = `${u.videoUsed.toFixed(1)}/${u.videoMax}`;
-  document.getElementById('miniVideoBar').style.width = videoPct+'%';
-  document.getElementById('miniVideoBar').parentElement.classList.toggle('warn', videoPct>70);
   document.getElementById('usagePillText').textContent = Math.max(0, u.textMax-u.textUsed);
   const st = document.getElementById('settingsTextUse'); if(st) st.textContent = `${u.textUsed} / ${u.textMax}`;
   const sb = document.getElementById('settingsTextBar'); if(sb) sb.style.width = textPct+'%';
-  const sv = document.getElementById('settingsVideoUse'); if(sv) sv.textContent = `${u.videoUsed.toFixed(1)} / ${u.videoMax}`;
-  const svb = document.getElementById('settingsVideoBar'); if(svb) svb.style.width = videoPct+'%';
 }
 
 /* ===================== CAPTION GENERATION ENGINE ===================== */
@@ -1280,10 +1417,11 @@ function unsaveCaption(id){
   if(entry && entry.serverId){ apiDelete('/api/saved', entry.serverId).catch(()=>{}); }
 }
 
-/* ===================== AUTH ===================== */
+/* ===================== AUTH (real, server-backed) ===================== */
 let authMode = 'login';
-function openAuth(mode){ authMode = mode; switchAuthTab(mode); document.getElementById('authModal').classList.add('open'); }
-function closeAuth(){ document.getElementById('authModal').classList.remove('open'); }
+let pendingAfterAuth = null; // e.g. 'video' — where to go once login succeeds
+function openAuth(mode, then){ authMode = mode; pendingAfterAuth = then || null; switchAuthTab(mode); document.getElementById('authModal').classList.add('open'); }
+function closeAuth(){ document.getElementById('authModal').classList.remove('open'); pendingAfterAuth = null; }
 function switchAuthTab(mode){
   authMode = mode;
   document.getElementById('tabLogin').classList.toggle('active', mode==='login');
@@ -1291,33 +1429,73 @@ function switchAuthTab(mode){
   document.getElementById('nameFieldWrap').style.display = mode==='signup' ? 'block' : 'none';
   document.getElementById('authSubmitBtn').textContent = mode==='signup' ? 'Sign up' : 'Log in';
 }
-function submitAuth(){
+async function submitAuth(){
   const email = document.getElementById('authEmail').value.trim();
   const pass = document.getElementById('authPassword').value;
   if(!email.includes('@')){ showToast('Enter a valid email address.', 'error'); return; }
   if(pass.length < 6){ showToast('Password must be at least 6 characters.', 'error'); return; }
-  state.authed = true;
-  state.userLabel = email.charAt(0).toUpperCase();
-  document.getElementById('profileBtn').textContent = state.userLabel;
-  document.getElementById('menuLoginItem').classList.add('hidden');
-  document.getElementById('menuLogoutItem').classList.remove('hidden');
-  document.getElementById('settingsEmail').value = email;
-  closeAuth();
-  showToast(authMode==='signup' ? 'Account created — welcome to Lafzaly!' : 'Welcome back!', 'success');
-  enterApp('generate');
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+  try{
+    const path = authMode === 'signup' ? '/api/auth-signup' : '/api/auth-login';
+    const res = await fetch(path, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+    closeAuth();
+    showToast(authMode==='signup' ? 'Account created — welcome to Lafzaly!' : 'Welcome back!', 'success');
+    await refreshSession();
+    const dest = pendingAfterAuth;
+    pendingAfterAuth = null;
+    enterApp(dest || 'generate');
+  } catch(err){
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 function forgotPassword(){
   const email = document.getElementById('authEmail').value.trim();
   if(!email.includes('@')){ showToast('Enter your email above first.', 'error'); return; }
-  showToast('If an account exists for that email, a reset link has been sent.', 'success');
+  showToast('Password reset isn\'t wired up yet in this build — contact support for now.', 'success');
 }
-function logoutUser(){
-  state.authed = false;
-  state.userLabel = 'G';
-  document.getElementById('profileBtn').textContent = 'G';
-  document.getElementById('menuLoginItem').classList.remove('hidden');
-  document.getElementById('menuLogoutItem').classList.add('hidden');
+async function logoutUser(){
+  try{ await fetch('/api/auth-logout', { method:'POST' }); } catch{}
+  state.currentUser = null;
+  applyUserToUI();
   showToast('Logged out.', 'success');
+  backToSite();
+}
+// Fetches the real session from the server and updates all UI that depends
+// on it (profile badge, usage pill, admin nav link, settings fields).
+async function refreshSession(){
+  try{
+    const res = await fetch('/api/auth-me');
+    const data = await res.json();
+    state.currentUser = data.user || null;
+  } catch{
+    state.currentUser = null;
+  }
+  applyUserToUI();
+}
+function applyUserToUI(){
+  const u = state.currentUser;
+  document.getElementById('profileBtn').textContent = u ? u.email.charAt(0).toUpperCase() : 'G';
+  document.getElementById('menuLoginItem').classList.toggle('hidden', !!u);
+  document.getElementById('menuLogoutItem').classList.toggle('hidden', !u);
+  document.getElementById('settingsEmail').value = u ? u.email : '';
+  document.getElementById('adminSideLink').classList.toggle('hidden', !(u && u.role === 'admin'));
+  updatePlanBadges();
+}
+function requireLogin(thenView){
+  if(state.currentUser){ return true; }
+  showToast('Please log in to continue.', 'success');
+  openAuth('login', thenView);
+  return false;
 }
 function setTheme(mode){
   state.theme = mode;
@@ -1368,7 +1546,10 @@ function initDropzone(){
   dz.addEventListener('drop', e=>{ const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
 }
 
+const MAX_VIDEO_SECONDS = 4 * 60;
+
 function handleFile(file){
+  if(!requireLogin('video')) return;
   const ext = file.name.split('.').pop().toLowerCase();
   if(!ALLOWED_EXT.includes(ext)){
     showToast(`Unsupported file type ".${ext}". Please upload MP4, MOV, WebM, MP3 or WAV.`, 'error');
@@ -1382,11 +1563,24 @@ function handleFile(file){
   state.video.url = URL.createObjectURL(file);
   getMediaDuration(state.video.url).then(duration => {
     state.video.duration = duration;
-    const minutesNeeded = duration / 60;
-    if(state.usage.videoUsed + minutesNeeded > state.usage.videoMax){
-      showToast(`This file needs ~${minutesNeeded.toFixed(1)} min of transcription, more than your ${(state.usage.videoMax - state.usage.videoUsed).toFixed(1)} remaining daily minutes. Upgrade to Pro for more.`, 'error');
+
+    if(duration > MAX_VIDEO_SECONDS){
+      showToast(`Video too long. Please upload a video up to ${MAX_VIDEO_SECONDS/60} minutes long.`, 'error');
       return;
     }
+
+    const u = state.currentUser;
+    if(u && u.role !== 'admin'){
+      if(u.isPro && u.videosToday >= u.videoDailyLimit){
+        showToast(`Daily limit reached. You've used all ${u.videoDailyLimit} video generations for today. Please come back tomorrow.`, 'error');
+        return;
+      }
+      if(!u.isPro && ((u.minutesToday||0) + duration/60 > 3)){
+        showToast('This would use more than your 3 free video minutes for today. Upgrade to Lafzaly Pro for full videos every day.', 'error');
+        return;
+      }
+    }
+
     if(window.__vercelBlobUpload){ realUpload(file); } else { simulateUploadDemo(file); }
   });
 }
@@ -1417,15 +1611,20 @@ async function realUpload(file){
       }
     });
     label.textContent = 'Upload complete';
-    startRealPipeline(blob.url);
+    startRealPipeline(blob.url, file.name);
   } catch(err){
     console.error('Blob upload failed:', err);
+    if(String(err.message||'').includes('401') || String(err.message||'').toLowerCase().includes('log in')){
+      showToast('Please log in to upload a video.', 'error');
+      openAuth('login', 'video');
+      return;
+    }
     showToast('Real upload failed (' + (err.message || 'unknown error') + ') — showing a demo transcript instead.', 'error');
     simulateUploadDemo(file);
   }
 }
 
-async function startRealPipeline(blobUrl){
+async function startRealPipeline(blobUrl, originalFilename){
   document.getElementById('uploadPanel').classList.add('hidden');
   document.getElementById('pipelinePanel').classList.remove('hidden');
   document.getElementById('pipelineSteps').innerHTML = PIPELINE_STAGES.map(s => `
@@ -1437,7 +1636,7 @@ async function startRealPipeline(blobUrl){
   const animation = animatePipelineStages();
   const request = fetch('/api/transcribe', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ blobUrl })
+    body: JSON.stringify({ blobUrl, durationSeconds: state.video.duration, originalFilename })
   }).then(async r => {
     const data = await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(data.error || 'Transcription failed.');
@@ -1447,6 +1646,7 @@ async function startRealPipeline(blobUrl){
   try{
     const [, data] = await Promise.all([animation, request]);
     finishPipelineReal(data);
+    refreshSession(); // pick up the newly-updated usage count
   } catch(err){
     document.getElementById('pipelinePanel').classList.add('hidden');
     document.getElementById('uploadPanel').classList.remove('hidden');
@@ -1832,6 +2032,18 @@ function init(){
   initDropzone();
   updateUsageDisplays();
   typewriterLoop();
+
+  refreshSession().then(() => {
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('upgraded') === '1'){
+      showToast('You are now on Lafzaly Pro! 🎉', 'success');
+      if(state.currentUser){ enterApp('settings'); }
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if(params.get('upgrade_cancelled') === '1'){
+      showToast('Checkout was cancelled — no charge was made.', 'success');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  });
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>

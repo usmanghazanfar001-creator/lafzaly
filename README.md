@@ -1,101 +1,159 @@
 # Lafzaly — Roman Urdu Caption Generator
 
-A working prototype of Lafzaly: an AI-powered Roman Urdu caption and subtitle
-generator for Pakistani creators. Includes **real** automatic voiceover
-transcription — upload a video, Lafzaly detects the speech, transcribes it,
-and rewrites it as natural Roman Urdu with timestamps — plus a real,
-persistent caption history/saved-captions store.
+Real per-user accounts, server-enforced daily/duration limits, an admin role,
+Stripe-billed Lafzaly Pro ($1/month), and word-timestamp-based caption sync
+that actually tracks the speech instead of floating fixed-length blocks.
 
-## What's in this repo
+## ⚠️ This update requires new setup before video captioning works again
 
-- `index.html` — the full app (landing page, dashboard, text generator,
-  video captioning workspace, history, saved captions, settings, mock auth).
-  No build step.
-- `api/blob-upload.js` — issues short-lived tokens so the browser can upload
-  large video files directly to Vercel Blob storage.
-- `api/transcribe.js` — downloads the uploaded file, sends it to Groq's
-  hosted Whisper for transcription with timestamps, then rewrites each line
-  into natural Roman Urdu via a Groq-hosted LLM.
-- `api/captions.js`, `api/saved.js`, `api/_db.js` — Turso (SQLite) storage for
-  caption history and saved captions.
-- `sql/schema.sql` — database schema, run once against your Turso DB.
-- `package.json` — declares `@libsql/client` and `@vercel/blob`.
+Video captioning now **requires login** (it didn't before), because per-user
+limits are meaningless without real accounts. If you don't complete the auth
+setup below, uploading a video will show "Please log in" instead of working.
 
-## One-time setup
+## What's new in this update
 
-### 1. Vercel Blob (for video uploads)
-In your Vercel project: **Storage → Create Database → Blob → Create**.
-Vercel automatically adds a `BLOB_READ_WRITE_TOKEN` environment variable —
-nothing else to configure.
+- **Real authentication** — signup/login/logout backed by a `users` table in
+  Neon (Postgres), sessions via signed httpOnly cookies (not localStorage, not a mock).
+- **4-minute video cap**, enforced both in the UI and in `api/transcribe.js`
+  (with a documented limitation — see "Known limitations" below).
+- **Daily limits enforced server-side**:
+  - Free: existing 3-minutes-of-video/day budget (unchanged), account required
+  - Pro ($1/mo): 3 full videos/day, 4 minutes each
+  - Admin: unlimited videos/day
+  - None of this can be bypassed by refreshing, logging out/in, or calling
+    the API directly — every check re-reads the database on every request.
+- **Admin role and dashboard** — `/api/admin-stats` + a new "Admin" sidebar
+  tab (hidden unless `role = 'admin'` — checked server-side, not just hidden
+  in the UI) showing users, their usage, and recent generation jobs including
+  failures.
+- **Lafzaly Pro billing via Stripe** — `api/billing-checkout.js` starts a
+  Checkout session; `api/billing-webhook.js` is the *only* place subscription
+  status is ever written. A successful redirect back to your site never
+  grants Pro access by itself — only a verified webhook event does.
+- **Real caption-sync fix** — `api/transcribe.js` now requests word-level
+  timestamps from Whisper (not just segment-level), groups words into short
+  (≤2-line) chunks that break at natural pauses/punctuation, and rewrites the
+  whole transcript into Roman Urdu in **one** batched call instead of one
+  call per line (faster, cheaper, and the timing is untouched by the rewrite
+  step).
+- **Google AdSense**: verification script in `<head>` and `ads.txt` at the
+  root, using the client ID you provided.
 
-### 2. Groq (for transcription + Roman Urdu conversion) — free to start
-1. Sign up at https://console.groq.com (no card required for the free tier).
-2. Create an API key under **API Keys**.
-3. In Vercel: **Settings → Environment Variables**, add:
-   - `GROQ_API_KEY` = your key
-4. Free tier covers roughly 2,000 transcription requests and ~8 hours of
-   audio per day — plenty for testing and early users. When you outgrow it,
-   Groq's paid tier is the same API with no code changes, or swap in another
-   provider using the same `api/transcribe.js` shape.
+## One-time setup (in order)
 
-### 3. Turso (for caption history)
-See the "Setting up Turso" steps below — unchanged from before.
+### 1. Create a Neon database and run the schema
+1. Create a project/database at neon.tech, copy its connection string.
+2. Add it to Vercel as `DATABASE_URL`.
+3. Paste the contents of `sql/schema.sql` into Neon's built-in SQL editor
+   (on your project dashboard) and run it. This creates `users`,
+   `generations`, `caption_generations`, and `saved_captions` — nothing
+   existing is dropped.
 
-1. Install the Turso CLI and sign up: https://docs.turso.tech/quickstart
-2. `turso db create lafzaly`
-3. `turso db show lafzaly --url` and `turso db tokens create lafzaly`
-4. `turso db shell lafzaly < sql/schema.sql`
-5. In Vercel, add `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-
-### 4. Redeploy
-Push a commit (or click Redeploy in Vercel) so the functions pick up the new
-environment variables.
-
-## How the video pipeline actually works now
-
+### 2. Generate a session secret
 ```
-Browser                          Vercel                         Groq
---------                         ------                         ----
-Select file
-  → upload() [Blob client] ───→ /api/blob-upload (issues token)
-  → file bytes go straight to Vercel Blob storage (not through your function)
-  → gets back a blob URL
-  → POST /api/transcribe {blobUrl} ───→ downloads file from Blob
-                                        ───→ Whisper large-v3-turbo (transcription + timestamps)
-                                        ───→ per-segment rewrite into Roman Urdu (Llama 3.3 70B)
-  ← segments [{start, end, text, lang}] ←───
-  → renders synced captions over the real <video> preview
+openssl rand -hex 32
+```
+Add it to Vercel as `JWT_SECRET`. This signs login sessions — treat it like a
+password; changing it later logs everyone out.
+
+### 3. Promote yourself to admin
+There's no signup-time admin flag by design (so nobody can self-promote).
+After you sign up once through the app, open Neon's SQL editor and run:
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
 ```
 
-If `GROQ_API_KEY` isn't set yet, or the Blob upload fails for any reason, the
-app automatically falls back to a labeled demo transcript so the UI still
-works end-to-end while you're setting things up — you'll see a toast telling
-you it's in demo mode.
+### 4. Set up Stripe for Lafzaly Pro
+1. Create a Stripe account (or use an existing one) at stripe.com.
+2. **Products → Add product** — name it "Lafzaly Pro", price **$1.00**,
+   billing period **Monthly**, recurring. Copy the **Price ID** (starts `price_`).
+3. **Developers → API keys** — copy your **Secret key**.
+4. **Developers → Webhooks → Add endpoint**:
+   - URL: `https://<your-domain>/api/billing-webhook`
+   - Events to send: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+   - Copy the **Signing secret** (starts `whsec_`).
+5. In Vercel, add:
+   - `STRIPE_SECRET_KEY`
+   - `STRIPE_PRICE_ID`
+   - `STRIPE_WEBHOOK_SECRET`
 
-## Known limitations
+Until these three are set, the "Get Pro" button will show a clear
+"Billing is not configured yet" error rather than failing silently.
 
-- **No real per-user accounts yet.** The API routes default every request to
-  a single `demo-user`, so all visitors share one history. The login/signup
-  modal is still a UI mock. Add real auth (Supabase Auth, Clerk, Auth.js,
-  etc.) before treating this as private data.
-- **Whisper's 25MB file-size limit.** Longer or higher-resolution videos may
-  exceed this — `api/transcribe.js` returns a clear error in that case rather
-  than failing silently. Audio-only exports of long content will fit more
-  reliably than full video files.
-- **Burned-in MP4 export** still requires a separate FFmpeg rendering step
-  (see `lafzaly-architecture.md`) — SRT/VTT export works today.
-- **Text caption generation** (the "Generate" tab, separate from video
-  captioning) is still a rule-based template engine, not a live LLM call.
-  Swapping that in follows the same `api/*.js` pattern as `transcribe.js`.
+### 5. Everything from before still applies
+`GROQ_API_KEY` and `BLOB_READ_WRITE_TOKEN` (via a Blob store) — see the setup
+steps in earlier versions of this README if you haven't done these yet.
+`DATABASE_URL` (Neon) replaces the old Turso variables entirely — remove
+`TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN` from Vercel if they're still there,
+they're no longer used.
 
-## Local preview
+### 6. Redeploy
+Push a commit so all the new environment variables and the new `api/*`
+files take effect.
 
-Open `index.html` directly for the frontend. The `/api/*` routes only run
-once deployed on Vercel (or via `vercel dev` locally with your env vars
-pulled: `vercel env pull .env.development.local`).
+## How the new pieces work
 
-## Deploy
+**Auth**: `api/auth-signup.js` and `api/auth-login.js` issue a signed JWT in
+an httpOnly cookie. `api/_auth.js`'s `getSessionUser()` re-reads the user's
+row from the database on every request — role and subscription are never
+trusted from the token itself, only from a fresh DB read, so a stale or
+tampered claim can't grant access.
 
-Push to GitHub, import the repo at vercel.com/new (Framework Preset:
-"Other"), add the environment variables above, and deploy. Every push to
-`main` redeploys automatically.
+**Daily limits & the 4-minute cap**: enforced in `api/transcribe.js` before
+any transcription is attempted, using `SELECT COUNT`/`SUM` against the
+`generations` table for the current UTC calendar day. **Timezone note**: "day"
+means the UTC calendar date, consistently, everywhere — documented here so
+it's a deliberate choice, not an accident.
+
+**Admin**: `role` lives only in the database and is set by you directly via
+SQL (see step 3 above) — there is no UI path to grant it, on purpose.
+
+**Stripe**: `checkout.session.completed`, `customer.subscription.updated`,
+and `customer.subscription.deleted` are the three events that update
+`subscription_status`/`subscription_plan`/`subscription_end_date` in the
+`users` table. If a subscription lapses, the next matching webhook event
+flips the user back to free automatically — nothing polls for this.
+
+**Caption sync fix**: previously every segment was Whisper's own
+(coarser) segment boundary, individually rewritten. Now: word-level
+timestamps → grouped into short chunks at real pauses/punctuation → the
+*entire* transcript rewritten into Roman Urdu in one call, with a safety
+fallback to the original English/mixed text if the rewrite ever comes back
+malformed (checked by line count) rather than risk breaking the timing.
+
+## Known limitations (stated plainly, not hidden)
+
+- **The 4-minute check has a real gap**: we trust the client-reported
+  duration to reject obviously-too-long files *before* paying for
+  transcription, and we double-check Whisper's own reported duration
+  afterward and refuse to count/return an over-limit result — but by then
+  the transcription cost has already been spent once. A fully tamper-proof
+  pre-check would need a server-side ffprobe-style duration read, which
+  isn't practical to run in a Vercel serverless function without a much
+  heavier dependency. This is a deliberate, documented trade-off.
+- **Burned-in MP4 export is still not implemented.** Server-side FFmpeg
+  doesn't fit Vercel's serverless execution limits well for video encoding.
+  SRT/VTT export and the live styled preview work today; in-browser burn-in
+  (via ffmpeg.wasm) is the realistic next step and is a separate follow-up.
+- **Text caption generation (the "Generate" tab) is intentionally NOT gated**
+  by the new auth/limits — it's a separate, lower-cost feature and was out of
+  scope for this update. Only video captioning requires login now.
+- **Password reset isn't wired up** — the "Forgot password?" link shows a
+  placeholder message. Needs an email-sending provider to implement properly.
+- **Free-plan enforcement re-derives from `generations` rows**, so a failed
+  job never counts against the daily budget — but a job that succeeds and is
+  later deleted from history is still counted (history deletion doesn't
+  delete the underlying generation record, by design, to keep usage honest).
+
+## Testing checklist (mirrors the original spec's scenarios)
+
+1. Sign up, confirm you land in the dashboard.
+2. Upload a <30s video as a Free user → should work, using minutes budget.
+3. Upload a video that would push you over 3 free minutes → clear error, no charge to Groq (rejected pre-flight).
+4. Upload a video over 4 minutes → clear "Video too long" error, rejected before transcription.
+5. Subscribe to Pro via the $1/month button → Stripe Checkout → on success, `/api/auth-me` should show `isPro: true` within a few seconds (webhook-driven).
+6. As Pro, generate 3 full videos in a day → 4th attempt should show the daily-limit error.
+7. Promote your account to admin via SQL → generate more than 3 videos same day → should never be blocked.
+8. Check the Admin tab → your test users and jobs (including any failed ones) should be listed.
+9. Cancel the Stripe subscription in the Stripe dashboard → next webhook delivery should flip you back to Free (may take a minute).
+10. Try calling `/api/transcribe` directly (e.g. via curl) without a session cookie → should get a 401, not a transcription.
