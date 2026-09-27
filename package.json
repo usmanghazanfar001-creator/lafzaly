@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
-    "@vercel/blob": "^1.0.0",
+    "@vercel/blob": "1.1.1",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "stripe": "^17.0.0"

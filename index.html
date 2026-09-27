@@ -910,7 +910,13 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
   // send large video files directly to Blob storage (bypassing the ~4.5MB
   // limit a normal serverless function request would hit). Exposed on
   // window so the main (non-module) script below can call it.
-  import { upload } from 'https://esm.sh/@vercel/blob/client';
+  //
+  // IMPORTANT: pinned to 1.1.1 deliberately. Versions 2.x of @vercel/blob
+  // have a known bug (confirmed via Vercel's own community forum) where
+  // client uploads on Hobby-plan projects fail with a CORS error against
+  // vercel.com/api/blob/... instead of the actual storage endpoint. Do not
+  // "helpfully" unpin this to latest without checking if that's fixed.
+  import { upload } from 'https://esm.sh/@vercel/blob@1.1.1/client';
   window.__vercelBlobUpload = upload;
 </script>
 <script>
