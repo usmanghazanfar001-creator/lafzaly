@@ -905,20 +905,6 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
 
 <div class="toast-stack" id="toastStack"></div>
 
-<script type="module">
-  // Loads Vercel Blob's client-upload helper from a CDN so the browser can
-  // send large video files directly to Blob storage (bypassing the ~4.5MB
-  // limit a normal serverless function request would hit). Exposed on
-  // window so the main (non-module) script below can call it.
-  //
-  // IMPORTANT: pinned to 1.1.1 deliberately. Versions 2.x of @vercel/blob
-  // have a known bug (confirmed via Vercel's own community forum) where
-  // client uploads on Hobby-plan projects fail with a CORS error against
-  // vercel.com/api/blob/... instead of the actual storage endpoint. Do not
-  // "helpfully" unpin this to latest without checking if that's fixed.
-  import { upload } from 'https://esm.sh/@vercel/blob@1.1.1/client';
-  window.__vercelBlobUpload = upload;
-</script>
 <script>
 /* ===================== STATE ===================== */
 const state = {
@@ -1587,7 +1573,7 @@ function handleFile(file){
       }
     }
 
-    if(window.__vercelBlobUpload){ realUpload(file); } else { simulateUploadDemo(file); }
+    realUpload(file);
   });
 }
 function getMediaDuration(url){
@@ -1600,7 +1586,16 @@ function getMediaDuration(url){
   });
 }
 
-/* ---- REAL pipeline: Vercel Blob upload -> /api/transcribe (Groq Whisper + Roman Urdu rewrite) ---- */
+/* ---- REAL pipeline: chunked upload through our own server -> /api/transcribe ----
+   (Not using Vercel Blob's official browser-direct "client upload" feature —
+   that hit an unresolved platform CORS bug on this account's store type.
+   Instead: slice the file into small pieces, POST each straight to our own
+   serverless function (well under its 4.5MB body limit), which stores it
+   server-side via Blob's plain put(). A finalize call then stitches the
+   pieces back together into the real file. Slower than a single direct
+   upload for large files, but works reliably regardless of that bug. */
+const UPLOAD_CHUNK_SIZE = 4 * 1024 * 1024; // 4MB — safely under the 4.5MB serverless body limit
+
 async function realUpload(file){
   document.getElementById('uploadProgressWrap').classList.remove('hidden');
   const bar = document.getElementById('uploadProgressBar');
@@ -1608,19 +1603,39 @@ async function realUpload(file){
   bar.style.width = '0%';
   label.textContent = `Uploading "${file.name}"…`;
   try{
-    const blob = await window.__vercelBlobUpload(file.name, file, {
-      access: 'public',
-      handleUploadUrl: '/api/blob-upload',
-      onUploadProgress: ({ percentage }) => {
-        bar.style.width = percentage + '%';
-        label.textContent = `Uploading "${file.name}" — ${Math.round(percentage)}%`;
-      }
+    const uploadId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + Math.random().toString(16).slice(2);
+    const totalChunks = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_SIZE));
+    const chunkUrls = [];
+
+    for(let i=0; i<totalChunks; i++){
+      const start = i * UPLOAD_CHUNK_SIZE;
+      const chunk = file.slice(start, start + UPLOAD_CHUNK_SIZE);
+      const res = await fetch(`/api/upload-chunk?uploadId=${encodeURIComponent(uploadId)}&chunkIndex=${i}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: chunk
+      });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.error || `Chunk ${i+1} of ${totalChunks} failed to upload.`);
+      chunkUrls.push(data.url);
+      const pct = Math.round(((i+1)/totalChunks) * 100);
+      bar.style.width = pct + '%';
+      label.textContent = `Uploading "${file.name}" — ${pct}%`;
+    }
+
+    label.textContent = 'Finalizing upload…';
+    const finalizeRes = await fetch('/api/upload-finalize', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chunkUrls, filename: file.name })
     });
+    const finalizeData = await finalizeRes.json().catch(()=>({}));
+    if(!finalizeRes.ok) throw new Error(finalizeData.error || 'Could not finalize upload.');
+
     label.textContent = 'Upload complete';
-    startRealPipeline(blob.url, file.name);
+    startRealPipeline(finalizeData.url, file.name);
   } catch(err){
-    console.error('Blob upload failed:', err);
-    if(String(err.message||'').includes('401') || String(err.message||'').toLowerCase().includes('log in')){
+    console.error('Chunked upload failed:', err);
+    if(String(err.message||'').toLowerCase().includes('log in')){
       showToast('Please log in to upload a video.', 'error');
       openAuth('login', 'video');
       return;
