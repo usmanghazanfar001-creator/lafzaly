@@ -16,8 +16,6 @@
 const { put } = require('@vercel/blob');
 const { getSessionUser } = require('./_auth');
 
-module.exports.config = { api: { bodyParser: false } };
-
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -40,10 +38,14 @@ module.exports = async (req, res) => {
 
   try {
     const buffer = await readRawBody(req);
-    const blob = await put(`chunks/${uploadId}/${chunkIndex}`, buffer, { access: 'public', addRandomSuffix: false });
+    const blob = await put(`chunks/${uploadId}/${chunkIndex}`, buffer, { access: 'public', addRandomSuffix: true, allowOverwrite: true, contentType: 'application/octet-stream' });
     return res.status(200).json({ url: blob.url });
   } catch (err) {
     console.error('upload-chunk error:', err);
-    return res.status(500).json({ error: 'Failed to store this chunk. Please try again.' });
+    // Surface the real reason (bad/missing token, private store, etc.) so it's debuggable.
+    return res.status(500).json({ error: 'Failed to store this chunk: ' + (err && err.message ? err.message : 'unknown error') });
   }
 };
+
+
+module.exports.config = { api: { bodyParser: false } };

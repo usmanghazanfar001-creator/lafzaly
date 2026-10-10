@@ -123,7 +123,11 @@ module.exports = async (req, res) => {
     }
 
     const form = new FormData();
-    form.append('file', new Blob([fileBuffer], { type: contentType }), 'audio-input');
+    // Groq infers the format from the filename extension, so it must have a real one.
+    const extFromName = ((originalFilename || '').split('.').pop() || '').toLowerCase();
+    const extFromType = { 'video/mp4':'mp4','video/webm':'webm','audio/mpeg':'mp3','audio/mp3':'mp3','audio/wav':'wav','audio/x-wav':'wav','video/quicktime':'mp4' }[contentType.split(';')[0]];
+    const ext = ['mp4','webm','mp3','wav','m4a','ogg','flac','mpeg','mpga'].includes(extFromName) ? extFromName : (extFromType || 'mp4');
+    form.append('file', new Blob([fileBuffer], { type: contentType }), `upload.${ext}`);
     form.append('model', 'whisper-large-v3-turbo');
     form.append('response_format', 'verbose_json');
     form.append('timestamp_granularities[]', 'word');
@@ -137,9 +141,11 @@ module.exports = async (req, res) => {
 
     if (!whisperRes.ok) {
       const errText = await whisperRes.text();
-      console.error('Groq Whisper error:', errText);
-      await markFailed('Transcription API error.');
-      return res.status(502).json({ error: 'Transcription failed. Please try again in a moment.' });
+      console.error('Groq Whisper error:', whisperRes.status, errText);
+      await markFailed('Transcription API error: ' + errText.slice(0, 300));
+      let detail = errText;
+      try { detail = JSON.parse(errText).error.message || errText; } catch {}
+      return res.status(502).json({ error: 'Transcription failed: ' + String(detail).slice(0, 200) });
     }
 
     const whisperData = await whisperRes.json();
@@ -254,7 +260,7 @@ ${numbered}`;
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_tokens: 2000
+        max_tokens: 8000
       })
     });
     if (!res.ok) return texts;

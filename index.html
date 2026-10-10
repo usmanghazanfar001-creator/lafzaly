@@ -1640,8 +1640,8 @@ async function realUpload(file){
       openAuth('login', 'video');
       return;
     }
-    showToast('Real upload failed (' + (err.message || 'unknown error') + ') — showing a demo transcript instead.', 'error');
-    simulateUploadDemo(file);
+    document.getElementById('uploadProgressWrap').classList.add('hidden');
+    showToast('Upload failed: ' + (err.message || 'unknown error'), 'error');
   }
 }
 
