@@ -1,5 +1,5 @@
 // /api/captions
-// GET    -> list recent caption generations (optionally ?userId=)
+// GET    -> list recent caption generations (logged-in user only)
 // POST   -> insert a new caption generation, body: { topic, platform, contentType, tone, length, hook, body, cta, hashtags: [] }
 // DELETE -> remove one, body or query: { id }
 //
@@ -7,12 +7,23 @@
 // 'demo-user' for everyone. Add real auth before treating this as private data.
 
 const { getDb } = require('./_db');
+const { getSessionUser } = require('./_auth');
 const crypto = require('crypto');
 
 module.exports = async (req, res) => {
   try {
     const db = getDb();
-    const userId = (req.query && req.query.userId) || 'demo-user';
+    // Data is always scoped to the logged-in user from the session cookie — never from the URL.
+    const user = await getSessionUser(req);
+    const userId = user ? user.id : null;
+    if (!userId) {
+      // Guests: nothing is stored on the server (the app keeps their session in memory only).
+      if (req.method === 'GET') return res.status(200).json({ captions: [] });
+      if (req.method === 'POST') return res.status(200).json({ id: null, guest: true });
+      if (req.method === 'DELETE') return res.status(200).json({ deleted: null });
+      res.setHeader('Allow', 'GET, POST, DELETE');
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
     if (req.method === 'GET') {
       const result = await db.execute({

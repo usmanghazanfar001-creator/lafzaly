@@ -33,6 +33,7 @@
 const crypto = require('crypto');
 const { getSessionUser, hasProAccess } = require('./_auth');
 const { getDb } = require('./_db');
+const { del } = require('@vercel/blob');
 
 const MAX_VIDEO_SECONDS = 4 * 60;
 const PRO_DAILY_VIDEOS = 3;
@@ -41,7 +42,7 @@ const MAX_CHUNK_CHARS = 42;   // roughly 2 short lines
 const MAX_CHUNK_WORDS = 9;
 const PAUSE_BREAK_SECONDS = 0.6; // a gap this long between words forces a new chunk
 
-module.exports = async (req, res) => {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -55,6 +56,13 @@ module.exports = async (req, res) => {
 
   const { blobUrl, durationSeconds, originalFilename, language } = req.body || {};
   if (!blobUrl) return res.status(400).json({ error: 'blobUrl is required' });
+  // Only accept files from our own Vercel Blob storage (prevents fetching/deleting arbitrary URLs).
+  let host = '';
+  try { host = new URL(blobUrl).hostname; } catch {}
+  if (!host.endsWith('.public.blob.vercel-storage.com')) {
+    return res.status(400).json({ error: 'Invalid file location.' });
+  }
+  req._lafzalyOwnsBlob = true;
 
   const declaredDuration = Number(durationSeconds) || 0;
   if (declaredDuration > MAX_VIDEO_SECONDS) {
@@ -194,6 +202,19 @@ module.exports = async (req, res) => {
     console.error('transcribe error:', err);
     await markFailed(err.message || 'Unknown error');
     return res.status(500).json({ error: 'Something went wrong while transcribing. Please try again.' });
+  }
+}
+
+module.exports = async (req, res) => {
+  try {
+    return await handler(req, res);
+  } finally {
+    // Privacy: the uploaded file is only needed for transcription — remove it as soon as we're done.
+    // Only runs for requests that passed login and the blob-host check above.
+    const url = req.body && req.body.blobUrl;
+    try {
+      if (url && req._lafzalyOwnsBlob) await del(url);
+    } catch (e) { console.warn('blob cleanup failed (non-fatal):', e.message); }
   }
 };
 

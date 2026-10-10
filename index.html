@@ -10,6 +10,7 @@
 <meta property="og:description" content="AI-powered Roman Urdu captions and subtitles for Pakistani creators.">
 <meta property="og:type" content="website">
 <meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230F5C46%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2740%27 text-anchor=%27middle%27 fill=%27%2331D6A1%27%3E%D9%84%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&display=swap" rel="stylesheet">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7402751690588915"
@@ -53,6 +54,14 @@ h1,h2,h3,h4{font-family:var(--font-display); letter-spacing:-0.01em; line-height
 .btn-secondary:hover{background:var(--ink); color:var(--paper);}
 .btn-ghost{background:rgba(20,17,14,.06); color:var(--ink);}
 .btn-ghost:hover{background:rgba(20,17,14,.11);}
+/* Inside the dark app shell the light-theme ghost/secondary buttons were invisible */
+#view-app .btn-ghost{background:rgba(255,255,255,.08); color:var(--dark-text); border:1px solid var(--dark-line);}
+#view-app .btn-ghost:hover{background:rgba(255,255,255,.15);}
+#view-app .btn-secondary{border-color:var(--dark-text-dim); color:var(--dark-text);}
+#view-app .btn-secondary:hover{background:var(--dark-text); color:var(--dark-bg);}
+.btn[disabled]{opacity:.55; cursor:not-allowed;}
+.footer-col a{display:block;}
+@media(max-width:480px){.site-nav .nav-cta .btn-primary{display:none;} .site-nav .container{gap:8px;}}
 .btn-marigold{background:var(--marigold); color:var(--ink);}
 .btn-marigold:hover{background:var(--marigold-dark); color:#fff;}
 .btn-sm{padding:8px 14px; font-size:13px; border-radius:9px;}
@@ -376,6 +385,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
+      <a href="/guides/">Guides</a>
     </div>
     <div class="nav-cta">
       <button class="btn btn-ghost btn-sm" onclick="openAuth('login')">Log in</button>
@@ -397,9 +407,9 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
         <button class="btn btn-secondary" onclick="enterApp('video')">Upload Video</button>
       </div>
       <div class="hero-trust">
-        <div class="trust-dots"><span>AK</span><span>SB</span><span>HR</span><span>+</span></div>
-        <span>Trusted by creators across Faisalabad, Lahore &amp; Karachi</span>
+        <span>Free to start · No card required · Built for Urdu, Roman Urdu &amp; mixed-language creators</span>
       </div>
+    </div>
     </div>
     <div class="demo-phone">
       <div class="demo-screen">
@@ -527,10 +537,26 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
           <div>✓ Roman Urdu + Urdu + English mixed speech</div>
           <div>✓ Synchronized, word-timed captions</div>
           <div>✓ All styling presets</div>
-          <div>✓ Captioned video &amp; SRT download</div>
+          <div>✓ SRT &amp; VTT download</div>
         </div>
         <button class="btn btn-block" style="background:var(--marigold);color:var(--ink);font-weight:700;" onclick="startProCheckout()">Get Pro — $1/month</button>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="guides">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-kicker">Free guides</span>
+      <h2>Learn to caption better, not just faster.</h2>
+      <p>Practical articles on Roman Urdu spelling, subtitle timing and getting captions onto every platform.</p>
+    </div>
+    <div class="features-grid">
+      <a class="feature-card" href="/guides/roman-urdu-captions-guide" style="text-decoration:none;color:inherit;"><div class="ic">✎</div><h4>How to write Roman Urdu captions people read</h4><p>One spelling per word, natural phrasing and a before/after checklist.</p></a>
+      <a class="feature-card" href="/guides/add-subtitles-reels-tiktok-shorts" style="text-decoration:none;color:inherit;"><div class="ic">🎬</div><h4>Add subtitles to Reels, TikTok &amp; Shorts</h4><p>A step-by-step workflow, plus what each platform accepts.</p></a>
+      <a class="feature-card" href="/guides/subtitle-readability-best-practices" style="text-decoration:none;color:inherit;"><div class="ic">⏱</div><h4>Subtitle readability on a phone</h4><p>Line length, reading speed and safe zones that work.</p></a>
+      <a class="feature-card" href="/guides/srt-vs-vtt" style="text-decoration:none;color:inherit;"><div class="ic">⚙</div><h4>SRT vs VTT</h4><p>Formats, differences and how to avoid broken text.</p></a>
     </div>
   </div>
 </section>
@@ -553,9 +579,9 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
         <p>Roman Urdu captions and subtitles for Pakistani creators, built for TikTok, Reels, Shorts and beyond.</p>
       </div>
       <div class="footer-cols">
-        <div class="footer-col"><h5>Product</h5><a href="#how-it-works">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a></div>
-        <div class="footer-col"><h5>Company</h5><a href="#faq">FAQ</a><a href="#" onclick="return false;">Contact</a><a href="#" onclick="return false;">Privacy</a></div>
-        <div class="footer-col"><h5>Get started</h5><a href="#" onclick="enterApp('generate');return false;">Generate a caption</a><a href="#" onclick="enterApp('video');return false;">Caption a video</a></div>
+        <div class="footer-col"><h5>Product</h5><a href="#how-it-works">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
+        <div class="footer-col"><h5>Learn</h5><a href="/guides/">All guides</a><a href="/guides/roman-urdu-captions-guide">Roman Urdu writing guide</a><a href="/guides/add-subtitles-reels-tiktok-shorts">Add subtitles to Reels &amp; Shorts</a><a href="/guides/srt-vs-vtt">SRT vs VTT</a></div>
+        <div class="footer-col"><h5>Company</h5><a href="/about">About</a><a href="/contact">Contact</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a></div>
       </div>
     </div>
     <div class="footer-bottom"><span>© 2026 Lafzaly. All rights reserved.</span><span>Made for Pakistani creators, in Roman Urdu.</span></div>
@@ -681,7 +707,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
               <div class="panel" style="margin-top:16px;">
                 <label class="field-label" style="margin-bottom:12px;">Export</label>
                 <div style="display:flex;flex-direction:column;gap:8px;">
-                  <button class="btn btn-marigold btn-sm" onclick="exportVideo()">⬇ Export Video (MP4)</button>
+                  <button class="btn btn-marigold btn-sm" onclick="exportVideo()" title="Burned-in video export is not available yet">⬇ Export Video (MP4) — coming soon</button>
                   <button class="btn btn-ghost btn-sm" onclick="downloadSubs('srt')">⬇ Download SRT</button>
                   <button class="btn btn-ghost btn-sm" onclick="downloadSubs('vtt')">⬇ Download VTT</button>
                   <button class="btn btn-ghost btn-sm" onclick="copyTranscript()">⧉ Copy Transcript</button>
@@ -1357,6 +1383,7 @@ async function syncSavedFromServer(){
 function fmtDate(d){
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function renderHistory(){
   const q = (document.getElementById('historySearch').value || '').toLowerCase();
   const body = document.getElementById('historyTableBody');
@@ -1365,10 +1392,10 @@ function renderHistory(){
   body.innerHTML = rows.map(h => `
     <tr>
       <td>${fmtDate(h.date)}</td>
-      <td>${h.topic.length>28 ? h.topic.slice(0,28)+'…' : h.topic}</td>
-      <td><span class="pill-sm">${h.platform}</span></td>
-      <td><span class="pill-sm">${h.tone}</span></td>
-      <td><span class="table-cap-text">${h.caption}</span></td>
+      <td>${esc(h.topic.length>28 ? h.topic.slice(0,28)+'…' : h.topic)}</td>
+      <td><span class="pill-sm">${esc(h.platform)}</span></td>
+      <td><span class="pill-sm">${esc(h.tone)}</span></td>
+      <td><span class="table-cap-text">${esc(h.caption)}</span></td>
       <td>${h.saved ? '★' : '—'}</td>
       <td class="row-actions">
         <button title="Copy" onclick="historyCopy('${h.id}')">⧉</button>
@@ -1393,13 +1420,17 @@ function renderSaved(){
   document.getElementById('savedEmpty').classList.toggle('hidden', state.saved.length>0);
   grid.innerHTML = state.saved.map(s => `
     <div class="result-card">
-      <div class="rc-top"><span class="rc-tag">${s.platform} · ${s.tone}</span></div>
-      <div class="rc-body" style="white-space:pre-wrap;">${s.text}</div>
+      <div class="rc-top"><span class="rc-tag">${esc(s.platform)} · ${esc(s.tone)}</span></div>
+      <div class="rc-body" style="white-space:pre-wrap;">${esc(s.text)}</div>
       <div class="rc-actions">
-        <button class="icon-btn" onclick="navigator.clipboard.writeText(\`${s.text.replace(/`/g,"'")}\`).then(()=>showToast('Copied.','success'))">⧉ Copy</button>
+        <button class="icon-btn" onclick="savedCopy('${s.id}')">⧉ Copy</button>
         <button class="icon-btn" onclick="unsaveCaption('${s.id}')">✕ Remove</button>
       </div>
     </div>`).join('');
+}
+function savedCopy(id){
+  const s = state.saved.find(x=>x.id===id);
+  if(s) navigator.clipboard.writeText(s.text).then(()=>showToast('Copied.','success'));
 }
 function unsaveCaption(id){
   const entry = state.saved.find(s=>s.id===id);
@@ -1835,8 +1866,8 @@ function renderTranscript(){
         <input type="number" step="0.1" value="${s.start}" onclick="event.stopPropagation()" onchange="updateSegTime('${s.id}','start',this.value)"> –
         <input type="number" step="0.1" value="${s.end}" onclick="event.stopPropagation()" onchange="updateSegTime('${s.id}','end',this.value)"><br>seconds
       </div>
-      <textarea class="seg-text" rows="2" onclick="event.stopPropagation()" oninput="updateSegText('${s.id}',this.value)">${s.text}</textarea>
-      <span class="seg-lang">${s.lang}</span>
+      <textarea class="seg-text" rows="2" onclick="event.stopPropagation()" oninput="updateSegText('${s.id}',this.value)">${esc(s.text)}</textarea>
+      <span class="seg-lang">${esc(s.lang)}</span>
       <button class="seg-del" onclick="event.stopPropagation();deleteSegment('${s.id}')">✕</button>
     </div>`).join('');
 }
@@ -1989,7 +2020,7 @@ function copyTranscript(){
   navigator.clipboard.writeText(text).then(()=>showToast('Transcript copied.', 'success'));
 }
 function exportVideo(){
-  showToast('Burned-in MP4 export needs server-side FFmpeg rendering — connect a processing worker to enable this. SRT/VTT export works right now.', 'error');
+  showToast('Burned-in MP4 export is not available yet. Download the SRT or VTT file and add it in your editor (CapCut, Premiere) or upload it to YouTube/Facebook.', 'success');
 }
 
 /* ===================== FAQ ===================== */

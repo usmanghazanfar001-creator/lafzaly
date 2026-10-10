@@ -1,0 +1,8 @@
+{
+  "cleanUrls": true,
+  "functions": {
+    "api/transcribe.js": { "maxDuration": 60 },
+    "api/upload-finalize.js": { "maxDuration": 60 },
+    "api/upload-chunk.js": { "maxDuration": 30 }
+  }
+}
