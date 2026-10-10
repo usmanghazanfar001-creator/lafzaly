@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
   const user = await getSessionUser(req);
   if (!user) return res.status(401).json({ error: 'Please log in to generate video captions.' });
 
-  const { blobUrl, durationSeconds, originalFilename } = req.body || {};
+  const { blobUrl, durationSeconds, originalFilename, language } = req.body || {};
   if (!blobUrl) return res.status(400).json({ error: 'blobUrl is required' });
 
   const declaredDuration = Number(durationSeconds) || 0;
@@ -130,6 +130,10 @@ module.exports = async (req, res) => {
     form.append('file', new Blob([fileBuffer], { type: contentType }), `upload.${ext}`);
     form.append('model', 'whisper-large-v3-turbo');
     form.append('response_format', 'verbose_json');
+    // Urdu/Hindi speech is otherwise often auto-detected as Hindi and written in Devanagari.
+    // Default to Urdu (this app targets Pakistani creators); send language:'auto' to disable.
+    const whisperLang = language === 'auto' ? null : (language || 'ur');
+    if (whisperLang) form.append('language', whisperLang);
     form.append('timestamp_granularities[]', 'word');
     form.append('timestamp_granularities[]', 'segment');
 
@@ -233,47 +237,67 @@ function chunkWordsIntoCaptions(words) {
 }
 
 function classifyLang(text) {
-  const hasUrduScript = /[\u0600-\u06FF]/.test(text);
+  const hasUrduScript = /[\u0600-\u06FF\u0900-\u097F]/.test(text);
   const hasLatin = /[a-zA-Z]/.test(text);
   if (hasUrduScript && hasLatin) return 'Mixed';
   if (hasUrduScript) return 'Urdu';
-  return 'English';
+  return 'Roman / English';
 }
 
-// Rewrites every chunk into natural Roman Urdu in a single LLM call, sent as
-// a numbered list so the model can't merge/reorder/drop lines — the reply is
-// parsed back into the same array shape and length, or padded with the
-// originals if anything doesn't line up (chunk timing must never depend on
-// the model returning a well-formed reply).
+// Rewrites chunks into natural Roman Urdu (Latin letters only). Input may be
+// Urdu script, Hindi/Devanagari or English. Works in batches of 25 lines and
+// asks for JSON so line order/count is unambiguous; any line that comes back
+// missing or still containing non-Latin script is retried individually, and
+// only falls back to the original text as a last resort.
+const NON_LATIN = /[؀-ۿऀ-ॿ਀-੿]/;
+
+async function callRoman(lines) {
+  const prompt = `You convert speech-transcript lines into natural, conversational Pakistani Roman Urdu: Urdu written ONLY in English/Latin letters, the way Pakistani creators text (e.g. "Aap sab kaise hain? Aaj hum baat karenge..."). The input lines may be in Urdu script, Hindi/Devanagari script, Punjabi, or English. Rules:
+- Output must use only Latin letters, digits and punctuation. NEVER output Urdu, Arabic, Hindi or Gurmukhi script.
+- Keep words that were genuinely spoken in English as English.
+- Do not translate to English, do not add or remove information, do not merge or split lines.
+Reply with JSON only: {"lines": ["...", "..."]} containing exactly ${lines.length} strings in the same order as the input.
+
+Input:
+${JSON.stringify(lines)}`;
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 4000,
+      response_format: { type: 'json_object' }
+    })
+  });
+  if (!res.ok) throw new Error('LLM HTTP ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  const data = await res.json();
+  const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+  return Array.isArray(parsed.lines) ? parsed.lines.map(x => String(x || '').trim()) : [];
+}
+
+const isGood = t => t && !NON_LATIN.test(t);
+
 async function toRomanUrduBatch(texts) {
   if (!texts.length) return texts;
-  const numbered = texts.map((t, i) => `${i + 1}. ${t}`).join('\n');
-  const prompt = `Convert each numbered line below from speech transcript into natural, conversational Pakistani Roman Urdu (Urdu written in Latin/English letters, the way Pakistani creators actually text) — not formal Urdu, not a stiff literal transliteration. Keep any words that were genuinely spoken in English as English. Do not add information that wasn't said. Reply with exactly the same number of numbered lines, same order, nothing else — no preamble, no extra commentary.
-
-${numbered}`;
-
+  const out = texts.slice();
+  const BATCH = 25;
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 8000
-      })
-    });
-    if (!res.ok) return texts;
-    const data = await res.json();
-    const reply = (data.choices?.[0]?.message?.content || '').trim();
-    const lines = reply.split('\n').map(l => l.replace(/^\s*\d+[\.\)]\s*/, '').trim()).filter(Boolean);
-    if (lines.length !== texts.length) {
-      console.warn(`Roman Urdu batch rewrite line-count mismatch: expected ${texts.length}, got ${lines.length}. Falling back to originals for safety.`);
-      return texts;
+    for (let b = 0; b < texts.length; b += BATCH) {
+      const slice = texts.slice(b, b + BATCH);
+      let got = [];
+      try { got = await callRoman(slice); } catch (e) { console.warn('roman batch failed:', e.message); }
+      for (let k = 0; k < slice.length; k++) {
+        let t = got.length === slice.length ? got[k] : '';
+        if (!isGood(t)) {            // retry this single line once
+          try { t = (await callRoman([slice[k]]))[0] || ''; } catch (e) { t = ''; }
+        }
+        if (isGood(t)) out[b + k] = t;   // else keep original text
+      }
     }
-    return lines;
   } catch (err) {
     console.error('toRomanUrduBatch failed:', err);
-    return texts; // fall back to raw transcript text rather than fail the whole job
   }
+  return out;
 }
