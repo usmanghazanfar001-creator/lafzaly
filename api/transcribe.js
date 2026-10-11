@@ -289,11 +289,12 @@ const NON_LATIN = /[؀-ۿऀ-ॿ਀-੿]/;
 async function callRoman(lines) {
   const prompt = `You convert speech-transcript lines into natural, conversational Pakistani Roman Urdu: Urdu written ONLY in English/Latin letters, the way Pakistani creators text (e.g. "Aap sab kaise hain? Aaj hum baat karenge..."). The input lines may be in Urdu script, Hindi/Devanagari script, Punjabi, or English. Rules:
 - This is a TRANSCRIPT, so be faithful and correct: transliterate exactly what was said, word for word, into standard Roman Urdu spelling used in Pakistani media and messaging: hai, hain, nahi, kya, kaise, aap, hum, main, mein, ko, ka, ki, ke, aaj, kal, bohat, acha, theek, karna, kiya, hoga, lekin, aur, kyun, yeh, woh, toh, bhi, sath, abhi, phir. Spell each word the same way every time. Do NOT use SMS shorthand (no "krna", "nhi", "hm", "bht", "ap").
-- Fix obvious speech-recognition mistakes only when the correct Urdu word is clear from context; never invent words that were not spoken.
+- The lines are consecutive speech from ONE video. The speech recognizer often mishears Urdu, so use the surrounding lines as context to repair words that are clearly garbled into the most likely real Urdu words (e.g. "hum iar pish toh bohat hai lekin skon nam" -> "Hamare paas paisa toh bohat hai, lekin sukoon nahi."). Only repair when the intended phrase is clear; otherwise keep what was heard. Never add ideas that were not spoken.
+- Add proper punctuation: commas at natural pauses, a full stop, question mark or exclamation mark at the end of each line, and a capital first letter.
 - Keep natural spoken Urdu word order and grammar. Keep the speaker's own English words (video, subscribe, like, share, tips) in English.
 - Output must use only Latin letters, digits and punctuation. NEVER output Urdu, Arabic, Hindi or Gurmukhi script.
 - Keep words that were genuinely spoken in English as English.
-- Do not translate to English, do not add or remove information, do not merge or split lines.
+- Do not translate to English, do not add new information, do not merge or split lines.
 Reply with JSON only: {"lines": ["...", "..."]} containing exactly ${lines.length} strings in the same order as the input.
 
 Input:
