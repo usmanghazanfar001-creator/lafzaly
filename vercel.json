@@ -1,5 +1,8 @@
 {
   "cleanUrls": true,
+  "rewrites": [
+    { "source": "/app/:view", "destination": "/app.html" }
+  ],
   "functions": {
     "api/transcribe.js": { "maxDuration": 60 },
     "api/upload-finalize.js": { "maxDuration": 60 },

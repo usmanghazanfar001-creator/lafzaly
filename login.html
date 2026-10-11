@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — Lafzaly</title>
+<meta name="description" content="Log in to Lafzaly, the Roman Urdu caption and subtitle generator.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0C0E0A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230F5C46%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2740%27 text-anchor=%27middle%27 fill=%27%2331D6A1%27%3E%D9%84%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&family=Poppins:wght@500;600;700;800&family=Montserrat:wght@500;700;800&family=Playfair+Display:ital,wght@0,600;1,500;1,600&family=Cormorant+Garamond:wght@600;700&family=Caveat:wght@600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body class="auth-page" data-mode="login">
+<div class="auth-wrap">
+  <aside class="auth-side">
+    <a class="logo" href="/"><span class="mark">ل</span>Lafzaly</a>
+    <div>
+      <h2>Captions that sound like you.</h2>
+      <p class="lead">Roman Urdu captions, hooks and animated subtitles for Reels, TikTok and Shorts.</p>
+      <div class="auth-demo"><b>Hello guys aj hm captions generate krna sikhy gai</b><span>Ap ki video ka voiceover upload karein, baqi kaam Lafzaly kr dega.</span><i>#RomanUrdu #Reels #Creators</i></div>
+    </div>
+    <small>© Lafzaly · <a href="/privacy" style="color:inherit">Privacy</a> · <a href="/terms" style="color:inherit">Terms</a></small>
+  </aside>
+  <main class="auth-main">
+    <div class="auth-card">
+      <a class="auth-mobile-logo" href="/"><span class="mark">ل</span>Lafzaly</a>
+      <h1>Welcome back</h1>
+      <p class="sub">Log in to see your history, saved captions and video captions.</p>
+      <form id="authForm" novalidate>
+        <div class="auth-error" id="authError" role="alert"></div>
+        <div class="field-block"><label class="field-label" for="authEmail">Email</label><input class="input-dark" id="authEmail" type="email" name="email" autocomplete="email" placeholder="you@example.com" required></div>
+        <div class="field-block"><label class="field-label" for="authPassword">Password</label>
+          <div class="pw-wrap"><input class="input-dark" id="authPassword" type="password" name="password" autocomplete="current-password" placeholder="••••••••" required><button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password">Show</button></div>
+        </div>
+        <button class="btn btn-primary btn-block" id="authSubmitBtn" type="submit">Log in</button>
+      </form>
+      <button type="button" class="auth-link" id="forgotBtn">Forgot password?</button>
+      <p class="auth-alt">Don’t have an account? <a href="/signup" id="altLink">Sign up free</a></p>
+      <p class="auth-alt" style="margin-top:10px;"><a href="/app" style="font-weight:500;color:var(--dark-text-dim);">Continue as guest →</a></p>
+    </div>
+  </main>
+</div>
+<script src="/auth.js" defer></script>
+</body>
+</html>

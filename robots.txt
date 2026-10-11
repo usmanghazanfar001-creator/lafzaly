@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /app
+Disallow: /login
+Disallow: /signup
 
 Sitemap: https://lafzaly.vercel.app/sitemap.xml

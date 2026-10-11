@@ -274,7 +274,9 @@ const NON_LATIN = /[؀-ۿऀ-ॿ਀-੿]/;
 
 async function callRoman(lines) {
   const prompt = `You convert speech-transcript lines into natural, conversational Pakistani Roman Urdu: Urdu written ONLY in English/Latin letters, the way Pakistani creators text (e.g. "Aap sab kaise hain? Aaj hum baat karenge..."). The input lines may be in Urdu script, Hindi/Devanagari script, Punjabi, or English. Rules:
-- STYLE: casual WhatsApp/Instagram texting Roman Urdu, like a Pakistani creator talking to followers. Examples of the exact feel: "Hello guys aj hm captions generate krna sikhy gai", "Yaar ye offer miss mat krna, bht kam time reh gya hai", "Kia aap ne abhi tak try nhi kia?". Use the short everyday spellings people actually type: aj, hm, krna/kr, kia, nhi, bht, hai/hain, ap, ye/wo, kyun, thora, sath, lye, gai/gye. Mix English words naturally (guys, offer, video, follow, link). Keep it light and short-sentenced, not formal and not bookish.
+- This is a TRANSCRIPT, so be faithful and correct: transliterate exactly what was said, word for word, into standard Roman Urdu spelling used in Pakistani media and messaging: hai, hain, nahi, kya, kaise, aap, hum, main, mein, ko, ka, ki, ke, aaj, kal, bohat, acha, theek, karna, kiya, hoga, lekin, aur, kyun, yeh, woh, toh, bhi, sath, abhi, phir. Spell each word the same way every time. Do NOT use SMS shorthand (no "krna", "nhi", "hm", "bht", "ap").
+- Fix obvious speech-recognition mistakes only when the correct Urdu word is clear from context; never invent words that were not spoken.
+- Keep natural spoken Urdu word order and grammar. Keep the speaker's own English words (video, subscribe, like, share, tips) in English.
 - Output must use only Latin letters, digits and punctuation. NEVER output Urdu, Arabic, Hindi or Gurmukhi script.
 - Keep words that were genuinely spoken in English as English.
 - Do not translate to English, do not add or remove information, do not merge or split lines.
