@@ -130,37 +130,53 @@ async function handler(req, res) {
       });
     }
 
-    const form = new FormData();
     // Groq infers the format from the filename extension, so it must have a real one.
     const extFromName = ((originalFilename || '').split('.').pop() || '').toLowerCase();
     const extFromType = { 'video/mp4':'mp4','video/webm':'webm','audio/mpeg':'mp3','audio/mp3':'mp3','audio/wav':'wav','audio/x-wav':'wav','video/quicktime':'mp4' }[contentType.split(';')[0]];
     const ext = ['mp4','webm','mp3','wav','m4a','ogg','flac','mpeg','mpga'].includes(extFromName) ? extFromName : (extFromType || 'mp4');
-    form.append('file', new Blob([fileBuffer], { type: contentType }), `upload.${ext}`);
-    form.append('model', 'whisper-large-v3-turbo');
-    form.append('response_format', 'verbose_json');
-    // Urdu/Hindi speech is otherwise often auto-detected as Hindi and written in Devanagari.
-    // Default to Urdu (this app targets Pakistani creators); send language:'auto' to disable.
+
+    async function runWhisper(lang, model) {
+      const form = new FormData();
+      form.append('file', new Blob([fileBuffer], { type: contentType }), `upload.${ext}`);
+      form.append('model', model || 'whisper-large-v3-turbo');
+      form.append('response_format', 'verbose_json');
+      form.append('temperature', '0');
+      if (lang) form.append('language', lang);
+      form.append('timestamp_granularities[]', 'word');
+      form.append('timestamp_granularities[]', 'segment');
+      const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST', headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` }, body: form
+      });
+      if (!r.ok) { const t = await r.text(); const e = new Error(t); e.status = r.status; throw e; }
+      return r.json();
+    }
+    const wordsOf = d => (d.words && d.words.length) ? d.words : flattenSegmentsToWords(d.segments || []);
+    // Urdu/Hindi speech is often auto-detected as Hindi and written in Devanagari, so default to Urdu.
+    // If that finds suspiciously little speech, retry with the larger Whisper model (Urdu, Hindi, auto) and keep the fullest result.
     const whisperLang = language === 'auto' ? null : (language || 'ur');
-    if (whisperLang) form.append('language', whisperLang);
-    form.append('timestamp_granularities[]', 'word');
-    form.append('timestamp_granularities[]', 'segment');
 
-    const whisperRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-      body: form
-    });
-
-    if (!whisperRes.ok) {
-      const errText = await whisperRes.text();
-      console.error('Groq Whisper error:', whisperRes.status, errText);
-      await markFailed('Transcription API error: ' + errText.slice(0, 300));
-      let detail = errText;
-      try { detail = JSON.parse(errText).error.message || errText; } catch {}
+    let whisperData;
+    try {
+      whisperData = await runWhisper(whisperLang);
+      const dur = Number(whisperData.duration) || declaredDuration || 0;
+      const sparse = d => dur > 4 && wordsOf(d).length < dur * 0.8;   // normal speech is ~2 words/sec
+      if (sparse(whisperData)) {
+        let best = whisperData;
+        for (const [alt, model] of [['ur', 'whisper-large-v3'], ['hi', 'whisper-large-v3'], [null, 'whisper-large-v3']]) {
+          try {
+            const d = await runWhisper(alt, model);
+            if (wordsOf(d).length > wordsOf(best).length) best = d;
+          } catch (e) { console.warn('whisper retry failed:', alt, e.message); }
+        }
+        whisperData = best;
+      }
+    } catch (e) {
+      console.error('Groq Whisper error:', e.status, e.message);
+      await markFailed('Transcription API error: ' + String(e.message).slice(0, 300));
+      let detail = e.message;
+      try { detail = JSON.parse(e.message).error.message || e.message; } catch {}
       return res.status(502).json({ error: 'Transcription failed: ' + String(detail).slice(0, 200) });
     }
-
-    const whisperData = await whisperRes.json();
 
     // Post-hoc real-duration check: refuse to count/return a result that
     // turns out to actually exceed the cap, even if the declared duration
@@ -171,9 +187,7 @@ async function handler(req, res) {
       return res.status(400).json({ error: `Video too long. Please upload a video up to ${MAX_VIDEO_SECONDS / 60} minutes long.` });
     }
 
-    const words = whisperData.words && whisperData.words.length
-      ? whisperData.words
-      : flattenSegmentsToWords(whisperData.segments || []);
+    const words = wordsOf(whisperData);
 
     if (!words.length) {
       await markFailed('No speech detected.');
