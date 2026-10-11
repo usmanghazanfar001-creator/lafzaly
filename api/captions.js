@@ -10,8 +10,50 @@ const { getDb } = require('./_db');
 const { getSessionUser } = require('./_auth');
 const crypto = require('crypto');
 
+const NON_LATIN = /[\u0600-\u06FF\u0900-\u097F]/;
+const ok = (c) => c && typeof c.hook === 'string' && typeof c.body === 'string' && c.hook && c.body && !NON_LATIN.test(c.hook + c.body);
+
+// POST { action:'generate', topic, platform, type, tone, length, count } -> { captions: [{hook, body, cta, hashtags}] }
+async function generate(req, res) {
+  if (!process.env.GROQ_API_KEY) return res.status(503).json({ error: 'AI generation is not configured.' });
+  const b = req.body || {};
+  const topic = String(b.topic || '').trim().slice(0, 300);
+  if (topic.length < 4) return res.status(400).json({ error: 'Topic is too short.' });
+  const clean = (v, d) => String(v || d).replace(/[^\w &/-]/g, '').slice(0, 40);
+  const platform = clean(b.platform, 'Instagram'), type = clean(b.type, 'Other'), tone = clean(b.tone, 'Casual');
+  const length = ['Short', 'Medium', 'Long'].includes(b.length) ? b.length : 'Medium';
+  const count = Math.min(Math.max(parseInt(b.count, 10) || 1, 1), 5);
+  const words = { Short: '12-25', Medium: '30-55', Long: '60-110' }[length];
+  const prompt = `You write social media captions for Pakistani creators in ROMAN URDU: Urdu language written with the English/Latin alphabet, exactly how Pakistanis type on WhatsApp and Instagram (e.g. "Aap ka din kaisa guzra? Yeh naya offer miss mat karna!").
+STYLE: casual WhatsApp/Instagram texting Roman Urdu, like a Pakistani creator talking to followers. Examples of the exact feel: "Hello guys aj hm captions generate krna sikhy gai", "Yaar ye offer miss mat krna, bht kam time reh gya hai", "Kia aap ne abhi tak try nhi kia?". Use the short everyday spellings people actually type: aj, hm, krna/kr, kia, nhi, bht, hai/hain, ap, ye/wo, kyun, thora, sath, lye, gai/gye. Mix English words naturally (guys, offer, video, follow, link). Keep it light and short-sentenced, not formal and not bookish.
+Rules:
+- Write ONLY in Latin letters. Never use Urdu/Arabic script or Hindi/Devanagari.
+- Natural spoken Pakistani Urdu. Common English words (sale, offer, launch, installments, free) stay as they are. No formal/literary Urdu, no literal translation.
+- Stay strictly on the topic. Do not invent prices, dates, phone numbers, addresses or claims that are not in the topic.
+- Platform: ${platform}. Content type: ${type}. Tone: ${tone}. Body length: ${words} words.
+- Each caption: "hook" (one scroll-stopping first line), "body", "cta" (one short call to action), "hashtags" (5 to 6 relevant hashtags, include #RomanUrdu).
+- Write ${count} clearly different captions.
+Topic (may be in English, Urdu or Roman Urdu): ${JSON.stringify(topic)}
+Reply with JSON only: {"captions":[{"hook":"","body":"","cta":"","hashtags":["#..."]}]}`;
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 2500, response_format: { type: 'json_object' } })
+  });
+  if (!r.ok) return res.status(502).json({ error: 'AI service error (' + r.status + ').' });
+  const data = await r.json();
+  let parsed; try { parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}'); } catch { parsed = {}; }
+  const caps = (Array.isArray(parsed.captions) ? parsed.captions : []).filter(ok).slice(0, count).map(c => ({
+    hook: c.hook.trim(), body: c.body.trim(), cta: String(c.cta || '').trim(),
+    hashtags: (Array.isArray(c.hashtags) ? c.hashtags : []).map(h => '#' + String(h).replace(/[^\w]/g, '')).filter(h => h.length > 1).slice(0, 7)
+  }));
+  if (!caps.length) return res.status(502).json({ error: 'No usable captions returned.' });
+  return res.status(200).json({ captions: caps });
+}
+
 module.exports = async (req, res) => {
   try {
+    if (req.method === 'POST' && req.body && req.body.action === 'generate') return await generate(req, res);
     const db = getDb();
     // Data is always scoped to the logged-in user from the session cookie — never from the URL.
     const user = await getSessionUser(req);
