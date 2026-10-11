@@ -10,9 +10,11 @@
 <meta property="og:description" content="AI-powered Roman Urdu captions and subtitles for Pakistani creators.">
 <meta property="og:type" content="website">
 <meta name="robots" content="index, follow">
+<link rel="canonical" href="https://lafzaly.vercel.app/">
+<meta property="og:url" content="https://lafzaly.vercel.app/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230F5C46%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2740%27 text-anchor=%27middle%27 fill=%27%2331D6A1%27%3E%D9%84%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&family=Poppins:wght@500;600;700;800&family=Montserrat:wght@500;700;800&family=Playfair+Display:ital,wght@0,600;1,500;1,600&family=Cormorant+Garamond:wght@600;700&family=Caveat:wght@600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7402751690588915"
      crossorigin="anonymous"></script>
 <script type="application/ld+json">
@@ -277,9 +279,28 @@ textarea.input-dark:focus, input.input-dark:focus, select.input-dark:focus{borde
 .video-workspace{display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start;}
 .vw-preview{position:sticky; top:90px;}
 .preview-frame{background:#000; border-radius:18px; overflow:hidden; position:relative; aspect-ratio:9/16; max-height:640px; margin:0 auto;}
-.preview-frame video{width:100%; height:100%; object-fit:contain; background:#000;}
+.preview-frame video{position:absolute; inset:0; width:100%; height:100%; opacity:0; pointer-events:none;}
+.preview-frame canvas{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:pointer;}
+.export-progress{margin-top:12px;}
+.export-progress .bar{height:6px; border-radius:99px; background:var(--dark-surface-2); overflow:hidden;}
+.export-progress .bar > div{height:100%; width:0%; background:var(--lime); transition:width .2s;}
+.export-progress .lbl{font-size:12.5px; color:var(--dark-text-dim); margin-top:6px;}
+.export-note{font-size:12px; color:var(--dark-text-dim); margin-top:10px; line-height:1.5;}
 .caption-overlay{position:absolute; left:0; right:0; padding:0 18px; display:flex; pointer-events:none; z-index:5;}
-.caption-overlay .bubble{max-width:100%; font-weight:800; text-align:center; padding:6px 4px; border-radius:8px; line-height:1.3;}
+.caption-overlay .bubble{max-width:100%; font-weight:800; text-align:center; padding:6px 4px; border-radius:8px; line-height:1.3; transition:background .2s;}
+.bubble .t{display:inline;}
+.bubble.marker .t{background:var(--cap-accent,#FFD84D); padding:.08em .5em; line-height:1.85; -webkit-box-decoration-break:clone; box-decoration-break:clone; border-radius:.25em;}
+.bubble .w{display:inline-block; transition:opacity .12s, transform .12s, color .12s;}
+.bubble .w.on{color:var(--cap-accent,#F2A93B); transform:scale(1.1);}
+.bubble .w.next{opacity:.45;}
+@keyframes capFade{from{opacity:0}to{opacity:1}}
+@keyframes capPop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+@keyframes capSlide{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.bubble.anim-fade{animation:capFade .28s ease-out both}
+.bubble.anim-pop{animation:capPop .28s cubic-bezier(.2,.9,.3,1.2) both}
+.bubble.anim-slide{animation:capSlide .3s ease-out both}
+.preset-card .sw-sample{display:flex; align-items:center; justify-content:center; height:40px; background:linear-gradient(135deg,#3a4132,#14170f); overflow:hidden;}
+.preset-card .sw-sample span{font-size:15px; white-space:nowrap; line-height:1.2;}
 .preview-controls{display:flex; align-items:center; gap:10px; margin-top:14px;}
 .preview-controls button{width:38px; height:38px; border-radius:50%; background:var(--dark-surface-2); border:1px solid var(--dark-line); color:var(--dark-text); flex-shrink:0;}
 .scrub{flex:1; height:5px; border-radius:99px; background:var(--dark-surface-2); position:relative; cursor:pointer;}
@@ -467,7 +488,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
         <div class="split-list">
           <div><span class="chk">✓</span>Automatic voice detection</div>
           <div><span class="chk">✓</span>Timestamped, editable subtitles</div>
-          <div><span class="chk">✓</span>TikTok / Reels style presets + SRT/VTT export</div>
+          <div><span class="chk">✓</span>Animated caption styles + captioned video, SRT &amp; VTT export</div>
         </div>
         <button class="btn" style="background:#fff;color:var(--emerald);" onclick="enterApp('video')">Try Video → Caption</button>
       </div>
@@ -502,7 +523,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
       <div class="feature-card"><div class="ic">✎</div><h4>Natural Roman Urdu</h4><p>Conversational Pakistani phrasing with English words mixed in the way creators really speak — never a stiff literal translation.</p></div>
       <div class="feature-card"><div class="ic">🎙</div><h4>Automatic voice detection</h4><p>Lafzaly listens to your video's voiceover and detects Urdu, Roman Urdu, English or mixed speech automatically.</p></div>
       <div class="feature-card"><div class="ic">⏱</div><h4>Timestamped subtitles</h4><p>Every line is aligned to your voiceover, ready to preview, edit and export as SRT or VTT.</p></div>
-      <div class="feature-card"><div class="ic">🎨</div><h4>Caption styling presets</h4><p>TikTok, Reels, YouTube Shorts, Bold, Minimal and Viral styles — font, color, position and animation, all adjustable.</p></div>
+      <div class="feature-card"><div class="ic">🎨</div><h4>Caption styling presets</h4><p>Animated word-by-word styles — Pop Words, One-Word Punch, Typewriter, Bounce — plus elegant looks like Editorial, Luxe Gold and Frosted Glass. Fonts, colors, position and timing are all adjustable.</p></div>
       <div class="feature-card"><div class="ic">#</div><h4>Hooks, CTAs &amp; hashtags</h4><p>Every caption ships with a scroll-stopping hook, a clear call-to-action and relevant hashtags — not just a sentence.</p></div>
       <div class="feature-card"><div class="ic">🗂</div><h4>History &amp; saved captions</h4><p>Every caption you generate is saved to your history — search, edit, reuse or delete anytime.</p></div>
     </div>
@@ -523,7 +544,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
         <div class="price-list">
           <div>✓ 10 text caption generations / day</div>
           <div>✓ 3 minutes of video transcription / day</div>
-          <div>✓ SRT export</div>
+          <div>✓ SRT, VTT &amp; captioned video export</div>
           <div>✓ Basic caption styles</div>
           <div>✓ Caption history &amp; saved captions</div>
         </div>
@@ -696,7 +717,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
               <div class="panel" style="padding:16px;">
                 <div class="preview-frame" id="previewFrame">
                   <video id="previewVideo" playsinline></video>
-                  <div class="caption-overlay" id="captionOverlay" style="bottom:8%;"><div class="bubble" id="captionBubble"></div></div>
+                  <canvas id="previewCanvas" onclick="togglePlay()" title="Click to play / pause"></canvas>
                 </div>
                 <div class="preview-controls">
                   <button onclick="togglePlay()" id="playBtn">▶</button>
@@ -707,11 +728,13 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
               <div class="panel" style="margin-top:16px;">
                 <label class="field-label" style="margin-bottom:12px;">Export</label>
                 <div style="display:flex;flex-direction:column;gap:8px;">
-                  <button class="btn btn-marigold btn-sm" onclick="exportVideo()" title="Burned-in video export is not available yet">⬇ Export Video (MP4) — coming soon</button>
+                  <button class="btn btn-marigold btn-sm" id="exportBtn" onclick="exportVideo()">⬇ Export captioned video</button>
                   <button class="btn btn-ghost btn-sm" onclick="downloadSubs('srt')">⬇ Download SRT</button>
                   <button class="btn btn-ghost btn-sm" onclick="downloadSubs('vtt')">⬇ Download VTT</button>
                   <button class="btn btn-ghost btn-sm" onclick="copyTranscript()">⧉ Copy Transcript</button>
                 </div>
+                <div class="export-progress hidden" id="exportProgress"><div class="bar"><div id="exportBar"></div></div><div class="lbl" id="exportLabel"></div></div>
+                <p class="export-note">The video is rendered in your browser at normal playback speed, so a 1-minute video takes about 1 minute. Keep this tab open while it exports.</p>
               </div>
             </div>
 
@@ -745,6 +768,12 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
                         <option value="'Inter',sans-serif">Inter</option>
                         <option value="Impact,sans-serif">Impact</option>
                         <option value="Georgia,serif">Georgia</option>
+                        <option value="'Poppins',sans-serif">Poppins</option>
+                        <option value="'Montserrat',sans-serif">Montserrat</option>
+                        <option value="'Playfair Display',serif">Playfair Display (elegant serif)</option>
+                        <option value="'Cormorant Garamond',serif">Cormorant Garamond (luxe)</option>
+                        <option value="'Caveat',cursive">Caveat (handwritten)</option>
+                        <option value="'Bebas Neue',sans-serif">Bebas Neue (tall caps)</option>
                       </select>
                     </div>
                     <div class="field-block">
@@ -755,6 +784,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
                       <label class="field-label">Text position</label>
                       <select class="input-dark" id="stylePosition" onchange="applyStyle()">
                         <option value="8%">Bottom</option>
+                        <option value="20%">Reels-safe (lower third)</option>
                         <option value="45%">Center</option>
                         <option value="80%">Top</option>
                       </select>
@@ -772,11 +802,30 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
                       <div class="color-swatch-row"><input type="color" id="styleColor" value="#ffffff" oninput="applyStyle()"></div>
                     </div>
                     <div class="field-block">
+                      <label class="field-label">Accent color <span style="font-weight:400;color:var(--dark-text-dim);">(highlight, pill, glow)</span></label>
+                      <div class="color-swatch-row"><input type="color" id="styleAccent" value="#F2A93B" oninput="applyStyle()"></div>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Weight</label>
+                      <select class="input-dark" id="styleWeight" onchange="applyStyle()">
+                        <option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option><option value="700">Bold</option><option value="800" selected>Extra bold</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Text case &amp; spacing</label>
+                      <select class="input-dark" id="styleCase" onchange="applyStyle()">
+                        <option value="normal">Normal</option><option value="upper">UPPERCASE</option><option value="upper-wide">UPPERCASE · wide spacing</option><option value="italic">Italic</option><option value="wide">Normal · wide spacing</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
                       <label class="field-label">Background</label>
                       <select class="input-dark" id="styleBg" onchange="applyStyle()">
                         <option value="none">None</option>
                         <option value="box" selected>Box</option>
                         <option value="gradient">Gradient fade</option>
+                        <option value="pill">Solid pill (accent)</option>
+                        <option value="glass">Frosted glass</option>
+                        <option value="marker">Highlighter marker (accent)</option>
                       </select>
                     </div>
                     <div class="field-block">
@@ -784,20 +833,41 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
                       <select class="input-dark" id="styleOutline" onchange="applyStyle()">
                         <option value="shadow">Drop shadow</option>
                         <option value="outline">Hard outline</option>
+                        <option value="soft">Soft subtle shadow</option>
+                        <option value="glow">Neon glow (accent)</option>
                         <option value="none">None</option>
                       </select>
                     </div>
                     <div class="field-block">
                       <label class="field-label">Animation</label>
                       <select class="input-dark" id="styleAnim" onchange="applyStyle()">
-                        <option value="pop">Pop-in per word</option>
-                        <option value="fade">Fade</option>
-                        <option value="none">None</option>
+                        <optgroup label="Per word (animated)">
+                          <option value="word-pop">Word pop — words appear as spoken</option>
+                          <option value="word-slide">Word slide-up</option>
+                          <option value="typewriter">Typewriter</option>
+                          <option value="bounce">Bounce on spoken word</option>
+                        </optgroup>
+                        <optgroup label="Whole line">
+                          <option value="pop">Pop</option>
+                          <option value="fade">Fade</option>
+                          <option value="slide">Slide up</option>
+                          <option value="none">None</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Words on screen</label>
+                      <select class="input-dark" id="styleChunk" onchange="applyStyle()">
+                        <option value="0">Full line</option>
+                        <option value="1">1 word at a time</option>
+                        <option value="2">2 words</option>
+                        <option value="3">3 words</option>
+                        <option value="4">4 words</option>
                       </select>
                     </div>
                   </div>
                   <div class="field-block" style="margin-top:4px;">
-                    <label class="field-label" style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="styleHighlight" checked onchange="applyStyle()" style="width:auto;"> Word-by-word highlight</label>
+                    <label class="field-label" style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="styleHighlight" checked onchange="applyStyle()" style="width:auto;"> Word-by-word highlight (accent color follows the voice)</label>
                   </div>
                 </div>
               </div>
@@ -931,6 +1001,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
 
 <div class="toast-stack" id="toastStack"></div>
 
+<script src="/caption-engine.js"></script>
 <script>
 /* ===================== STATE ===================== */
 const state = {
@@ -1557,7 +1628,25 @@ const STYLE_PRESETS = {
   'Clean': { font:"'Inter',sans-serif", size:24, pos:'8%', align:'center', color:'#ffffff', bg:'none', outline:'shadow', anim:'none', hl:false },
   'Bold': { font:'Impact,sans-serif', size:36, pos:'45%', align:'center', color:'#F2A93B', bg:'none', outline:'outline', anim:'pop', hl:true },
   'Viral': { font:"'Sora',sans-serif", size:32, pos:'8%', align:'center', color:'#31D6A1', bg:'box', outline:'shadow', anim:'pop', hl:true },
-  'Minimal': { font:"'Inter',sans-serif", size:20, pos:'8%', align:'left', color:'#ffffff', bg:'none', outline:'none', anim:'none', hl:false }
+  'Minimal': { font:"'Inter',sans-serif", size:20, pos:'8%', align:'left', color:'#ffffff', bg:'none', outline:'none', anim:'none', hl:false },
+  /* ---- Elegant set ---- */
+  'Editorial': { font:"'Playfair Display',serif", size:26, pos:'20%', align:'center', color:'#ffffff', accent:'#F3D98B', bg:'none', outline:'soft', anim:'fade', hl:false, weight:600, case:'italic' },
+  'Luxe Gold': { font:"'Cormorant Garamond',serif", size:30, pos:'20%', align:'center', color:'#F3D98B', accent:'#F3D98B', bg:'none', outline:'soft', anim:'fade', hl:false, weight:700, case:'upper-wide' },
+  'Frosted Glass': { font:"'Poppins',sans-serif", size:23, pos:'20%', align:'center', color:'#ffffff', accent:'#ffffff', bg:'glass', outline:'none', anim:'slide', hl:false, weight:600, case:'normal' },
+  'Neon Glow': { font:"'Montserrat',sans-serif", size:27, pos:'45%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'glow', anim:'pop', hl:true, weight:800, case:'normal' },
+  'Highlighter': { font:"'Poppins',sans-serif", size:25, pos:'20%', align:'center', color:'#14110E', accent:'#FFD84D', bg:'marker', outline:'none', anim:'pop', hl:false, weight:700, case:'normal' },
+  'Karaoke': { font:"'Montserrat',sans-serif", size:29, pos:'20%', align:'center', color:'#ffffff', accent:'#F2A93B', bg:'none', outline:'outline', anim:'pop', hl:true, weight:800, case:'normal' },
+  'Cinema': { font:"'Inter',sans-serif", size:21, pos:'8%', align:'center', color:'#F3F1E6', accent:'#F3F1E6', bg:'none', outline:'soft', anim:'fade', hl:false, weight:500, case:'wide' },
+  'Pastel Pill': { font:"'Poppins',sans-serif", size:23, pos:'20%', align:'center', color:'#14110E', accent:'#F6E7C8', bg:'pill', outline:'none', anim:'slide', hl:false, weight:600, case:'normal' },
+  'Handwritten': { font:"'Caveat',cursive", size:36, pos:'20%', align:'center', color:'#ffffff', accent:'#F2A93B', bg:'none', outline:'shadow', anim:'pop', hl:true, weight:700, case:'normal' },
+  /* ---- Animated set ---- */
+  'Pop Words': { font:"'Montserrat',sans-serif", size:34, pos:'20%', align:'center', color:'#ffffff', accent:'#FFD84D', bg:'none', outline:'outline', anim:'word-pop', hl:true, weight:800, case:'upper', chunk:3 },
+  'One-Word Punch': { font:"'Bebas Neue',sans-serif", size:46, pos:'45%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'outline', anim:'word-pop', hl:true, weight:400, case:'upper-wide', chunk:1 },
+  'Slide Stack': { font:"'Poppins',sans-serif", size:30, pos:'20%', align:'center', color:'#ffffff', accent:'#F2A93B', bg:'none', outline:'shadow', anim:'word-slide', hl:true, weight:700, case:'normal', chunk:2 },
+  'Bounce Beat': { font:"'Poppins',sans-serif", size:32, pos:'20%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'outline', anim:'bounce', hl:true, weight:800, case:'upper', chunk:3 },
+  'Typewriter': { font:"'Inter',sans-serif", size:24, pos:'20%', align:'center', color:'#ffffff', accent:'#F2A93B', bg:'box', outline:'none', anim:'typewriter', hl:false, weight:600, case:'normal', chunk:0 },
+  'Pill Pop': { font:"'Poppins',sans-serif", size:27, pos:'20%', align:'center', color:'#14110E', accent:'#FFD84D', bg:'pill', outline:'none', anim:'word-pop', hl:false, weight:700, case:'normal', chunk:2 },
+  'Tall Caps': { font:"'Bebas Neue',sans-serif", size:40, pos:'45%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'outline', anim:'pop', hl:true, weight:400, case:'upper-wide' }
 };
 
 function initDropzone(){
@@ -1874,14 +1963,17 @@ function renderTranscript(){
 function updateSegTime(id, field, val){
   const s = state.video.segments.find(x=>x.id===id);
   if(s) s[field] = parseFloat(val) || 0;
+  invalidateCues();
 }
 function updateSegText(id, val){
   const s = state.video.segments.find(x=>x.id===id);
   if(s) s.text = val;
+  invalidateCues();
 }
 function deleteSegment(id){
   state.video.segments = state.video.segments.filter(s=>s.id!==id);
   renderTranscript();
+  invalidateCues();
 }
 function jumpToSegment(id){
   const s = state.video.segments.find(x=>x.id===id);
@@ -1900,23 +1992,9 @@ function onVideoTimeUpdate(){
   updateTimeLabel();
   document.getElementById('scrubFill').style.width = (vid.duration ? (vid.currentTime/vid.duration*100) : 0) + '%';
   const current = state.video.segments.find(s => vid.currentTime >= s.start && vid.currentTime < s.end);
-  const bubble = document.getElementById('captionBubble');
   document.querySelectorAll('.seg-row').forEach(r=>r.classList.remove('playing'));
-  if(current){
-    bubble.style.visibility = 'visible';
-    if(document.getElementById('styleHighlight').checked && document.getElementById('styleAnim').value !== 'none'){
-      const words = current.text.split(' ');
-      const t = (vid.currentTime - current.start) / Math.max(0.3,(current.end-current.start));
-      const revealCount = Math.max(1, Math.ceil(words.length * Math.min(1,t)));
-      bubble.innerHTML = words.map((w,i)=> i<revealCount ? `<span style="opacity:1">${w}</span>` : `<span style="opacity:.4">${w}</span>`).join(' ');
-    } else {
-      bubble.textContent = current.text;
-    }
-    const row = document.getElementById('row-'+current.id);
-    if(row) row.classList.add('playing');
-  } else {
-    bubble.style.visibility = 'hidden';
-  }
+  if(current){ const row = document.getElementById('row-'+current.id); if(row) row.classList.add('playing'); }
+  requestPaint();
 }
 function updateTimeLabel(){
   const vid = document.getElementById('previewVideo');
@@ -1937,11 +2015,29 @@ function switchTab(name){
 }
 
 /* styling */
+function presetSwatch(p){
+  const cs = p.case || 'normal';
+  const track = cs.includes('wide') ? (cs.startsWith('upper') ? '.12em' : '.05em') : '0';
+  let st = `font-family:${p.font};font-weight:${p.weight||800};color:${p.color};letter-spacing:${track};`;
+  if(cs.startsWith('upper')) st += 'text-transform:uppercase;';
+  if(cs==='italic') st += 'font-style:italic;';
+  const acc = p.accent || '#F2A93B';
+  if(p.bg==='box') st += 'background:rgba(0,0,0,.6);padding:3px 9px;border-radius:6px;';
+  else if(p.bg==='pill') st += `background:${acc};padding:3px 12px;border-radius:99px;`;
+  else if(p.bg==='glass') st += 'background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);padding:3px 11px;border-radius:10px;';
+  else if(p.bg==='marker') st += `background:${acc};padding:1px 8px;border-radius:3px;`;
+  else if(p.bg==='gradient') st += 'background:linear-gradient(transparent,rgba(0,0,0,.7));padding:3px 9px;';
+  if(p.outline==='glow') st += `text-shadow:0 0 6px ${acc},0 0 14px ${acc};`;
+  else if(p.outline==='shadow') st += 'text-shadow:0 2px 5px rgba(0,0,0,.9);';
+  else if(p.outline==='soft') st += 'text-shadow:0 1px 3px rgba(0,0,0,.7);';
+  else if(p.outline==='outline') st += '-webkit-text-stroke:1px #000;';
+  return `<div class="swatch sw-sample"><span style="${st}">Lafzaly</span></div>`;
+}
 function buildPresetRow(){
   const row = document.getElementById('presetRow');
   row.innerHTML = Object.entries(STYLE_PRESETS).map(([name,p],idx) => `
     <div class="preset-card${idx===0?' selected':''}" data-preset="${name}" onclick="applyPreset('${name}', this)">
-      <div class="swatch" style="background:linear-gradient(135deg, ${p.color}, #111);"></div>
+      ${presetSwatch(p)}
       <b>${name}</b>
     </div>`).join('');
   applyPreset('TikTok Style', row.querySelector('.preset-card'));
@@ -1956,36 +2052,90 @@ function applyPreset(name, node){
   document.getElementById('stylePosition').value = p.pos;
   document.getElementById('styleAlign').value = p.align;
   document.getElementById('styleColor').value = p.color;
+  document.getElementById('styleAccent').value = p.accent || '#F2A93B';
+  document.getElementById('styleWeight').value = String(p.weight || 800);
+  document.getElementById('styleCase').value = p.case || 'normal';
   document.getElementById('styleBg').value = p.bg;
   document.getElementById('styleOutline').value = p.outline;
   document.getElementById('styleAnim').value = p.anim;
+  document.getElementById('styleChunk').value = String(p.chunk || 0);
   document.getElementById('styleHighlight').checked = p.hl;
   applyStyle();
 }
+function readStyle(){
+  const v = id => document.getElementById(id).value;
+  return {
+    font:v('styleFont'), size:+v('styleFontSize'), pos:v('stylePosition'), align:v('styleAlign'),
+    color:v('styleColor'), accent:v('styleAccent'), weight:v('styleWeight'), caseMode:v('styleCase'),
+    bg:v('styleBg'), outline:v('styleOutline'), anim:v('styleAnim'),
+    hl:document.getElementById('styleHighlight').checked, chunk:+v('styleChunk')
+  };
+}
 function applyStyle(){
   document.getElementById('fontSizeVal').textContent = document.getElementById('styleFontSize').value;
-  const bubble = document.getElementById('captionBubble');
-  const overlay = document.getElementById('captionOverlay');
-  const font = document.getElementById('styleFont').value;
-  const size = document.getElementById('styleFontSize').value;
-  const pos = document.getElementById('stylePosition').value;
-  const align = document.getElementById('styleAlign').value;
-  const color = document.getElementById('styleColor').value;
-  const bg = document.getElementById('styleBg').value;
-  const outline = document.getElementById('styleOutline').value;
+  CaptionEngine.fontReady(readStyle()).then(requestPaint);
+  requestPaint();
+}
 
-  overlay.style.bottom = pos;
-  overlay.style.justifyContent = align==='center' ? 'center' : (align==='left' ? 'flex-start' : 'flex-end');
-  bubble.style.fontFamily = font;
-  bubble.style.fontSize = size+'px';
-  bubble.style.color = color;
-  bubble.style.textAlign = align;
-  bubble.style.background = bg==='box' ? 'rgba(0,0,0,.55)' : (bg==='gradient' ? 'linear-gradient(transparent, rgba(0,0,0,.75))' : 'transparent');
-  bubble.style.padding = bg==='none' ? '4px' : '8px 14px';
-  bubble.style.borderRadius = bg==='box' ? '10px' : '0';
-  if(outline==='shadow'){ bubble.style.textShadow = '0 2px 6px rgba(0,0,0,.85)'; bubble.style.webkitTextStroke = '0'; }
-  else if(outline==='outline'){ bubble.style.textShadow = 'none'; bubble.style.webkitTextStroke = '1.5px #000'; }
-  else { bubble.style.textShadow = 'none'; bubble.style.webkitTextStroke = '0'; }
+/* ---- live preview: canvas draws the video frame + animated captions (same engine as export) ---- */
+let _cues = null, _cuesSegs = null, _cuesChunk = -1, _cuesRev = 0, _paintQueued = false, _loopOn = false;
+function invalidateCues(){ _cuesRev++; requestPaint(); }
+function getCues(chunk){
+  const segs = state.video.segments || [];
+  if(!_cues || _cuesSegs !== segs || _cuesChunk !== chunk || _cues._rev !== _cuesRev){
+    _cues = CaptionEngine.buildCues(segs, chunk); _cues._rev = _cuesRev; _cuesSegs = segs; _cuesChunk = chunk;
+  }
+  return _cues;
+}
+function sizePreviewCanvas(){
+  const c = document.getElementById('previewCanvas'); if(!c) return false;
+  const r = c.getBoundingClientRect(); if(!r.width) return false;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.round(r.width*dpr), h = Math.round(r.height*dpr);
+  if(c.width !== w || c.height !== h){ c.width = w; c.height = h; }
+  return true;
+}
+function paintPreview(){
+  const c = document.getElementById('previewCanvas'), vid = document.getElementById('previewVideo');
+  if(!c || !vid || !sizePreviewCanvas()) return;
+  const ctx = c.getContext('2d'), W = c.width, H = c.height;
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+  let dx = 0, dy = 0, dw = W, dh = H;
+  const hasVideo = vid.videoWidth > 0 && vid.readyState >= 2;
+  if(hasVideo){
+    const sc = Math.min(W/vid.videoWidth, H/vid.videoHeight);
+    dw = vid.videoWidth*sc; dh = vid.videoHeight*sc; dx = (W-dw)/2; dy = (H-dh)/2;
+    ctx.drawImage(vid, dx, dy, dw, dh);
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#16301f'); g.addColorStop(1,'#07100a');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  }
+  const st = readStyle();
+  ctx.save(); ctx.beginPath(); ctx.rect(dx,dy,dw,dh); ctx.clip(); ctx.translate(dx,dy);
+  CaptionEngine.draw(ctx, dw, dh, vid.currentTime || 0, getCues(st.chunk), st, {
+    drawBackdrop: () => { if(hasVideo) ctx.drawImage(vid, 0, 0, dw, dh); }
+  });
+  ctx.restore();
+}
+function requestPaint(){
+  if(_paintQueued) return;
+  _paintQueued = true;
+  requestAnimationFrame(() => { _paintQueued = false; try{ paintPreview(); }catch(e){ console.error('preview paint failed', e); } });
+}
+function previewLoop(){
+  const vid = document.getElementById('previewVideo');
+  if(!vid || vid.paused || vid.ended){ _loopOn = false; requestPaint(); return; }
+  paintPreview();
+  requestAnimationFrame(previewLoop);
+}
+function initPreviewCanvas(){
+  const vid = document.getElementById('previewVideo'), c = document.getElementById('previewCanvas');
+  if(!vid || !c || vid._wired) return;
+  vid._wired = true;
+  vid.addEventListener('play', () => { if(!_loopOn){ _loopOn = true; requestAnimationFrame(previewLoop); } });
+  ['pause','seeked','loadeddata','loadedmetadata','ended'].forEach(ev => vid.addEventListener(ev, requestPaint));
+  if(window.ResizeObserver) new ResizeObserver(requestPaint).observe(c);
+  window.addEventListener('resize', requestPaint);
 }
 
 /* export */
@@ -2019,8 +2169,123 @@ function copyTranscript(){
   const text = state.video.segments.map(s=>s.text).join('\n');
   navigator.clipboard.writeText(text).then(()=>showToast('Transcript copied.', 'success'));
 }
-function exportVideo(){
-  showToast('Burned-in MP4 export is not available yet. Download the SRT or VTT file and add it in your editor (CapCut, Premiere) or upload it to YouTube/Facebook.', 'success');
+/* ---- Captioned video export: canvas + MediaRecorder, entirely in the browser ----
+   Plays the video once in a hidden element, draws every frame plus the animated captions onto a canvas
+   (same engine as the preview), and records the canvas together with the audio track. */
+let exportJob = null;
+function pickExportMime(){
+  const cands = [
+    // H.264 + AAC MP4 first (what Instagram / TikTok / phones expect); WebM only if the browser has no H.264 recorder
+    ['video/mp4;codecs=avc1.640028,mp4a.40.2','mp4'], ['video/mp4;codecs=avc1.4D401F,mp4a.40.2','mp4'],
+    ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','mp4'], ['video/mp4;codecs=avc1,mp4a.40.2','mp4'],
+    ['video/webm;codecs=vp9,opus','webm'], ['video/webm;codecs=vp8,opus','webm'], ['video/webm','webm']
+  ];
+  for(const [m,ext] of cands){ try{ if(MediaRecorder.isTypeSupported(m)) return {mime:m, ext}; }catch(e){} }
+  return null;
+}
+function setExportUI(running, pct, label){
+  const btn = document.getElementById('exportBtn'), wrap = document.getElementById('exportProgress');
+  if(!btn || !wrap) return;
+  btn.textContent = running ? '✕ Cancel export' : '⬇ Export captioned video';
+  wrap.classList.toggle('hidden', !running && !label);
+  if(pct != null) document.getElementById('exportBar').style.width = pct + '%';
+  document.getElementById('exportLabel').textContent = label || '';
+}
+function cancelExport(){ if(exportJob){ exportJob.cancelled = true; exportJob.finish(); } }
+async function exportVideo(){
+  if(exportJob){ cancelExport(); return; }
+  if(!state.video.segments || !state.video.segments.length){ showToast('No captions to export yet.', 'error'); return; }
+  if(!state.video.url){ showToast('Video file is not available. Please upload it again.', 'error'); return; }
+  if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){
+    showToast('Your browser cannot record video. Please use a recent Chrome, Edge or Firefox on a computer or Android phone. You can still download the SRT/VTT.', 'error'); return;
+  }
+  const fmt = pickExportMime();
+  if(!fmt){ showToast('This browser has no supported video recorder. Try Chrome or Edge.', 'error'); return; }
+
+  const preview = document.getElementById('previewVideo'); try{ preview.pause(); }catch(e){}
+  const job = exportJob = { cancelled:false, finish(){} };
+  setExportUI(true, 0, 'Preparing…');
+
+  const v = document.createElement('video');
+  v.playsInline = true; v.preload = 'auto'; v.src = state.video.url;
+  let ac = null, recorder = null, raf = 0, stallTimer = 0;
+  const cleanup = () => {
+    cancelAnimationFrame(raf); clearInterval(stallTimer);
+    try{ if(recorder && recorder.state !== 'inactive') recorder.stop(); }catch(e){}
+    try{ v.pause(); }catch(e){} try{ v.removeAttribute('src'); v.load(); }catch(e){}
+    try{ if(ac) ac.close(); }catch(e){}
+    exportJob = null;
+  };
+  try{
+    await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('Could not read the video file.')); });
+    const st = readStyle();
+    await CaptionEngine.fontReady(st);
+    const cues = CaptionEngine.buildCues(state.video.segments, st.chunk);
+
+    // output size: native size, capped at 1080x1920 (or 1920x1080), always even numbers
+    let vw = v.videoWidth, vh = v.videoHeight;
+    const audioOnly = !vw || !vh;
+    if(audioOnly){ vw = 1080; vh = 1920; }
+    const portrait = vh >= vw, maxW = portrait ? 1080 : 1920, maxH = portrait ? 1920 : 1080;
+    const sc = Math.min(1, maxW/vw, maxH/vh);
+    const W = Math.max(2, Math.round(vw*sc/2)*2), H = Math.max(2, Math.round(vh*sc/2)*2);
+    const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const stream = canvas.captureStream(30);
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    if(ac.state === 'suspended') await ac.resume();
+    const dest = ac.createMediaStreamDestination();
+    ac.createMediaElementSource(v).connect(dest);   // routed to the recorder only, so nothing plays out loud
+    dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+
+    const chunks = [];
+    recorder = new MediaRecorder(stream, { mimeType: fmt.mime, videoBitsPerSecond: 8e6, audioBitsPerSecond: 128e3 });
+    recorder.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+    const stopped = new Promise(res => { recorder.onstop = res; });
+
+    const duration = (isFinite(v.duration) && v.duration > 0) ? v.duration : Math.max(...state.video.segments.map(x => x.end));
+    const drawFrame = () => {
+      ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
+      if(!audioOnly && v.readyState >= 2) ctx.drawImage(v, 0, 0, W, H);
+      else if(audioOnly){ const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#16301f'); g.addColorStop(1,'#07100a'); ctx.fillStyle = g; ctx.fillRect(0,0,W,H); }
+      CaptionEngine.draw(ctx, W, H, v.currentTime, cues, st, { drawBackdrop: () => { if(!audioOnly) ctx.drawImage(v, 0, 0, W, H); } });
+    };
+    let done = false;
+    job.finish = () => { if(done) return; done = true; try{ if(recorder.state !== 'inactive') recorder.stop(); }catch(e){} };
+    v.onended = () => setTimeout(job.finish, 250);
+
+    drawFrame();
+    recorder.start(500);
+    let lastT = -1, lastMove = performance.now();
+    const loop = () => {
+      if(done) return;
+      drawFrame();
+      const t = v.currentTime, pct = Math.min(99, Math.round(t/duration*100));
+      setExportUI(true, pct, `Rendering captions into your video… ${pct}%` + (document.hidden ? ' (tab in background — switch back to this tab)' : ''));
+      if(t !== lastT){ lastT = t; lastMove = performance.now(); }
+      raf = requestAnimationFrame(loop);
+    };
+    stallTimer = setInterval(() => { if(!done && performance.now() - lastMove > 8000){ job.stalled = true; job.finish(); } }, 1000);
+    await v.play();
+    raf = requestAnimationFrame(loop);
+    await stopped;
+
+    if(job.cancelled){ setExportUI(false, 0, ''); showToast('Export cancelled.', 'success'); return; }
+    if(job.stalled && lastT < duration - 1){ throw new Error('Rendering stalled. Keep this tab in the foreground while exporting and try again.'); }
+    const blob = new Blob(chunks, { type: fmt.mime.split(';')[0] });
+    if(!blob.size) throw new Error('The recording came out empty.');
+    downloadBlob(blob, 'lafzaly-captioned.' + fmt.ext, blob.type);
+    setExportUI(false, 100, 'Done — your captioned video was downloaded.');
+    showToast(fmt.ext === 'mp4' ? 'Captioned video downloaded (MP4).' : 'Captioned video downloaded (WebM). Convert to MP4 if the app you post to requires it.', 'success');
+  } catch(err){
+    console.error('export failed:', err);
+    setExportUI(false, 0, '');
+    showToast('Export failed: ' + (err.message || 'unknown error'), 'error');
+  } finally {
+    cleanup();
+    requestPaint();
+  }
 }
 
 /* ===================== FAQ ===================== */
@@ -2030,7 +2295,7 @@ const FAQS = [
   { q:"Can Lafzaly caption a video that has both Urdu and English speech?", a:"Yes. Lafzaly detects mixed Urdu + English voiceovers and writes the transcript out in natural Roman Urdu, keeping English words where creators would naturally use them." },
   { q:"What video and audio formats are supported?", a:"MP4, MOV and WebM for video, and MP3 and WAV for audio-only voiceovers." },
   { q:"Can I edit the captions after they're generated?", a:"Yes — every caption card and every subtitle line is editable, including start/end timestamps for video captions." },
-  { q:"Can I export a captioned MP4 directly?", a:"SRT and VTT export work today. Burned-in MP4 export requires server-side video rendering and is part of the Pro roadmap." }
+  { q:"Can I download the video with captions burned in?", a:"Yes. 'Export captioned video' renders your video with the animated captions directly in your browser, nothing is uploaded again. It runs at normal playback speed, so keep the tab open. Chrome, Edge and Safari produce an MP4 where the browser supports it; some browsers produce WebM instead. SRT and VTT downloads are also available." }
 ];
 function renderFAQ(){
   document.getElementById('faqList').innerHTML = FAQS.map((f,i) => `
@@ -2075,6 +2340,7 @@ function typewriterLoop(){
 
 /* ===================== INIT ===================== */
 function init(){
+  initPreviewCanvas();
   buildChipGroup('platformChips','platform');
   buildChipGroup('typeChips','type');
   buildChipGroup('toneChips','tone');
