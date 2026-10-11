@@ -469,3 +469,12 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
   .auth-mobile-logo{display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:20px; margin-bottom:28px; color:#fff; text-decoration:none;}
   .auth-mobile-logo .mark{width:34px; height:34px; border-radius:9px; background:var(--emerald); display:grid; place-items:center;}
 }
+
+.pos-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; width:132px; padding:8px; background:var(--dark-bg); border:1px solid var(--dark-line); border-radius:12px; aspect-ratio:9/12;}
+.pos-grid button{background:var(--dark-surface-2); border:1px solid var(--dark-line); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;}
+.pos-grid button i{width:10px; height:10px; border-radius:50%; background:var(--dark-text-dim); opacity:.5;}
+.pos-grid button:hover{border-color:var(--lime);}
+.pos-grid button:focus-visible{outline:2px solid var(--lime); outline-offset:2px;}
+.pos-grid button.on{background:var(--emerald); border-color:var(--lime);}
+.pos-grid button.on i{background:#fff; opacity:1;}
+.pos-hint{font-size:12px; color:var(--dark-text-dim); margin-top:6px;}

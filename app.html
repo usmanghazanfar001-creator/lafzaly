@@ -211,21 +211,21 @@
                       <input type="range" class="input-dark" id="styleFontSize" min="16" max="46" value="28" oninput="applyStyle()">
                     </div>
                     <div class="field-block">
-                      <label class="field-label">Text position</label>
-                      <select class="input-dark" id="stylePosition" onchange="applyStyle()">
-                        <option value="8%">Bottom</option>
-                        <option value="20%">Reels-safe (lower third)</option>
-                        <option value="45%">Center</option>
-                        <option value="80%">Top</option>
-                      </select>
-                    </div>
-                    <div class="field-block">
-                      <label class="field-label">Alignment</label>
-                      <select class="input-dark" id="styleAlign" onchange="applyStyle()">
-                        <option value="center">Center</option>
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                      </select>
+                      <label class="field-label">Caption position</label>
+                      <input type="hidden" id="stylePosition" value="8%">
+                      <input type="hidden" id="styleAlign" value="center">
+                      <div class="pos-grid" id="posGrid" role="radiogroup" aria-label="Caption position">
+                        <button type="button" role="radio" data-v="80%" data-h="left" aria-label="Top left" onclick="setCapPos('80%','left')"><i></i></button>
+                        <button type="button" role="radio" data-v="80%" data-h="center" aria-label="Top center" onclick="setCapPos('80%','center')"><i></i></button>
+                        <button type="button" role="radio" data-v="80%" data-h="right" aria-label="Top right" onclick="setCapPos('80%','right')"><i></i></button>
+                        <button type="button" role="radio" data-v="45%" data-h="left" aria-label="Middle left" onclick="setCapPos('45%','left')"><i></i></button>
+                        <button type="button" role="radio" data-v="45%" data-h="center" aria-label="Middle center" onclick="setCapPos('45%','center')"><i></i></button>
+                        <button type="button" role="radio" data-v="45%" data-h="right" aria-label="Middle right" onclick="setCapPos('45%','right')"><i></i></button>
+                        <button type="button" role="radio" data-v="8%" data-h="left" aria-label="Bottom left" onclick="setCapPos('8%','left')"><i></i></button>
+                        <button type="button" role="radio" data-v="8%" data-h="center" aria-label="Bottom center" onclick="setCapPos('8%','center')"><i></i></button>
+                        <button type="button" role="radio" data-v="8%" data-h="right" aria-label="Bottom right" onclick="setCapPos('8%','right')"><i></i></button>
+                      </div>
+                      <div class="pos-hint" id="posHint">Bottom center</div>
                     </div>
                     <div class="field-block">
                       <label class="field-label">Text color</label>

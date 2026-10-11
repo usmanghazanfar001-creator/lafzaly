@@ -1083,6 +1083,7 @@ function applyPreset(name, node){
   document.getElementById('fontSizeVal').textContent = p.size;
   document.getElementById('stylePosition').value = p.pos;
   document.getElementById('styleAlign').value = p.align;
+  syncPosGrid();
   document.getElementById('styleColor').value = p.color;
   document.getElementById('styleAccent').value = p.accent || '#F2A93B';
   document.getElementById('styleWeight').value = String(p.weight || 800);
@@ -1102,6 +1103,23 @@ function readStyle(){
     bg:v('styleBg'), outline:v('styleOutline'), anim:v('styleAnim'),
     hl:document.getElementById('styleHighlight').checked, chunk:+v('styleChunk')
   };
+}
+function setCapPos(v, h){
+  document.getElementById('stylePosition').value = v;
+  document.getElementById('styleAlign').value = h;
+  syncPosGrid(); applyStyle();
+}
+function syncPosGrid(){
+  const pv = parseFloat(document.getElementById('stylePosition').value) || 8;
+  const v = pv >= 70 ? '80%' : (pv >= 35 ? '45%' : '8%');   // lower-third presets (20%) sit in the bottom row
+  const h = document.getElementById('styleAlign').value || 'center';
+  let label = '';
+  document.querySelectorAll('#posGrid button').forEach(b => {
+    const on = b.dataset.v === v && b.dataset.h === h;
+    b.classList.toggle('on', on); b.setAttribute('aria-checked', on ? 'true' : 'false');
+    if(on) label = b.getAttribute('aria-label');
+  });
+  const hint = document.getElementById('posHint'); if(hint) hint.textContent = label;
 }
 function applyStyle(){
   document.getElementById('fontSizeVal').textContent = document.getElementById('styleFontSize').value;
@@ -1329,7 +1347,7 @@ function init(){
   buildChipGroup('toneChips','tone');
   buildChipGroup('lengthChips','length');
   buildChipGroup('countChips','count');
-  initDropzone();
+  initDropzone(); syncPosGrid();
   updateUsageDisplays();
 
   refreshSession().then(() => {

@@ -104,9 +104,11 @@
     var blockH = lines.length * lineH;
 
     // position: pos = distance of the block's bottom edge from the bottom of the frame
-    var bottomMargin = H * (parseFloat(st.pos) || 8) / 100;
-    var blockBottom = H - bottomMargin - pad.y;
-    var blockTop = blockBottom - blockH;
+    // >=70 = top of frame, 35-70 = vertically centred, below that = distance from the bottom edge
+    var posN = parseFloat(st.pos) || 8, blockTop, blockBottom;
+    if (posN >= 70) { blockTop = H * 0.07 + pad.y; blockBottom = blockTop + blockH; }
+    else if (posN >= 35) { blockTop = (H - blockH) / 2; blockBottom = blockTop + blockH; }
+    else { blockBottom = H - H * posN / 100 - pad.y; blockTop = blockBottom - blockH; }
     var align = st.align || 'center';
     var blockX = align === 'left' ? W * 0.07 + pad.x : (align === 'right' ? W * 0.93 - pad.x - blockW : (W - blockW) / 2);
 
