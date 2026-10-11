@@ -301,6 +301,20 @@ ${JSON.stringify(lines)}`;
   return Array.isArray(parsed.lines) ? parsed.lines.map(x => String(x || '').trim()) : [];
 }
 
+
+// ---- Last-resort rule-based Urdu/Hindi -> Roman transliteration (used only when the LLM fails) ----
+const UR_WORDS = { 'ہماری':'hamari','ہمارا':'hamara','ہمارے':'hamare','ہوگی':'hogi','ہوگا':'hoga','ہوں':'hoon','ہے':'hai','ہیں':'hain','میں':'main','نہیں':'nahi','کیا':'kya','اور':'aur','کی':'ki','کا':'ka','کے':'ke','کو':'ko','سے':'se','پر':'par','بھی':'bhi','تو':'toh','یہ':'yeh','وہ':'woh','آپ':'aap','ہم':'hum','میرا':'mera','میری':'meri','تم':'tum','اب':'ab','جی':'ji','ہاں':'haan','کہ':'ke','ایک':'aik','بہت':'bohat','لیکن':'lekin','پھر':'phir','آج':'aaj','کل':'kal','ہو':'ho','تھا':'tha','تھی':'thi','گا':'ga','گی':'gi' };
+const UR_LET = { 'ا':'a','آ':'aa','ب':'b','پ':'p','ت':'t','ٹ':'t','ث':'s','ج':'j','چ':'ch','ح':'h','خ':'kh','د':'d','ڈ':'d','ذ':'z','ر':'r','ڑ':'r','ز':'z','ژ':'zh','س':'s','ش':'sh','ص':'s','ض':'z','ط':'t','ظ':'z','ع':'a','غ':'gh','ف':'f','ق':'q','ک':'k','گ':'g','ل':'l','م':'m','ن':'n','ں':'n','و':'o','ہ':'h','ھ':'h','ء':'','ی':'i','ے':'e','ئ':'i','ۃ':'h','ؤ':'o','أ':'a','ۓ':'e','ي':'i','ك':'k','ه':'h' };
+function ruleBasedRoman(text) {
+  return String(text).replace(/[؀-ۿ]+/g, w => {
+    const clean = w.replace(/[ً-ٰٟ]/g, '');
+    if (UR_WORDS[clean]) return UR_WORDS[clean];
+    let o = '';
+    for (const ch of clean) o += (ch in UR_LET ? UR_LET[ch] : '');
+    return o || '';
+  }).replace(/[ऀ-ॿ]+/g, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 const isGood = t => t && !NON_LATIN.test(t);
 
 async function toRomanUrduBatch(texts) {
@@ -311,13 +325,16 @@ async function toRomanUrduBatch(texts) {
     for (let b = 0; b < texts.length; b += BATCH) {
       const slice = texts.slice(b, b + BATCH);
       let got = [];
-      try { got = await callRoman(slice); } catch (e) { console.warn('roman batch failed:', e.message); }
+      try { got = await callRoman(slice); } catch (e) { console.warn('roman batch failed:', e.message); await new Promise(r => setTimeout(r, 800)); try { got = await callRoman(slice); } catch (e2) { console.warn('roman batch retry failed:', e2.message); } }
       for (let k = 0; k < slice.length; k++) {
         let t = got.length === slice.length ? got[k] : '';
         if (!isGood(t)) {            // retry this single line once
-          try { t = (await callRoman([slice[k]]))[0] || ''; } catch (e) { t = ''; }
+          for (let a = 0; a < 2 && !isGood(t); a++) {
+            try { t = (await callRoman([slice[k]]))[0] || ''; } catch (e) { t = ''; await new Promise(r => setTimeout(r, 600)); }
+          }
         }
-        if (isGood(t)) out[b + k] = t;   // else keep original text
+        if (!isGood(t)) t = ruleBasedRoman(slice[k]);
+        if (isGood(t)) out[b + k] = t;   // never leave Urdu/Hindi script in the output
       }
     }
   } catch (err) {

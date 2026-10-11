@@ -132,9 +132,9 @@ function updatePlanBadges(){
   }
   if(u.role === 'admin'){
     if(videoLabel) videoLabel.textContent = 'Videos today';
-    document.getElementById('miniVideoUse').textContent = `${u.videosToday} (unlimited)`;
+    document.getElementById('miniVideoUse').textContent = `${u.videosToday ?? 0} (unlimited)`;
     if(settingsLabel) settingsLabel.textContent = 'Videos today';
-    document.getElementById('settingsVideoUse').textContent = `${u.videosToday} (unlimited — admin)`;
+    document.getElementById('settingsVideoUse').textContent = `${u.videosToday ?? 0} (unlimited — admin)`;
     if(proCard) proCard.classList.add('hidden');
     setBars(0);
   } else if(u.isPro){
