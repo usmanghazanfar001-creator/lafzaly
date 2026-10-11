@@ -38,9 +38,9 @@ const { del } = require('@vercel/blob');
 const MAX_VIDEO_SECONDS = 4 * 60;
 const PRO_DAILY_VIDEOS = 3;
 const FREE_DAILY_MINUTES = 3;
-const MAX_CHUNK_CHARS = 42;   // roughly 2 short lines
-const MAX_CHUNK_WORDS = 9;
-const PAUSE_BREAK_SECONDS = 0.6; // a gap this long between words forces a new chunk
+const MAX_CHUNK_CHARS = 34;   // roughly 2 short lines
+const MAX_CHUNK_WORDS = 6;
+const PAUSE_BREAK_SECONDS = 0.35; // a gap this long between words forces a new chunk
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -197,12 +197,16 @@ async function handler(req, res) {
     const chunks = chunkWordsIntoCaptions(words);
     const romanTexts = await toRomanUrduBatch(chunks.map(c => c.text));
 
-    const segments = chunks.map((c, i) => ({
-      start: +c.start.toFixed(2),
-      end: +c.end.toFixed(2),
-      text: (romanTexts[i] || c.text).trim(),
-      lang: classifyLang(c.text)
-    }));
+    const segments = chunks.map((c, i) => {
+      const text = (romanTexts[i] || c.text).trim();
+      return {
+        start: +c.start.toFixed(2),
+        end: +c.end.toFixed(2),
+        text,
+        lang: classifyLang(c.text),
+        words: mapWordTimes(text, c)      // real per-word timing from Whisper, carried over to the Roman words
+      };
+    });
 
     await db.execute({
       sql: 'UPDATE generations SET status = ?, duration_seconds = ? WHERE id = ?',
@@ -245,6 +249,7 @@ function chunkWordsIntoCaptions(words) {
     if (!current.length) return;
     chunks.push({
       text: current.map(w => w.word).join(' ').replace(/\s+/g, ' ').trim(),
+      src: current.map(w => ({ s: w.start, e: w.end })),
       start: current[0].start,
       end: current[current.length - 1].end
     });
@@ -267,6 +272,22 @@ function chunkWordsIntoCaptions(words) {
   }
   flush();
   return chunks;
+}
+
+// Spreads the Roman words over the speech recogniser's real word start times, so karaoke-style
+// captions follow the voice instead of an even split. Returns [[start, end], ...] (one per word).
+function mapWordTimes(text, chunk) {
+  const toks = text.split(/\s+/).filter(Boolean);
+  const src = chunk.src || [];
+  if (!toks.length || !src.length) return null;
+  const n = src.length, m = toks.length;
+  const starts = toks.map((_, j) => {
+    const f = (j * n) / m, i = Math.min(n - 1, Math.floor(f));
+    const next = src[Math.min(n - 1, i + 1)];
+    const span = (i + 1 < n ? next.s : src[i].e) - src[i].s;
+    return src[i].s + Math.max(0, span) * (f - i);
+  });
+  return toks.map((_, j) => [+starts[j].toFixed(2), +(j + 1 < m ? starts[j + 1] : chunk.end).toFixed(2)]);
 }
 
 function classifyLang(text) {

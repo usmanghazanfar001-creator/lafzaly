@@ -1,3 +1,7 @@
+/* ===================== ICONS (inline line icons, inherit currentColor) ===================== */
+const ICONS = {"pen": "<path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z\"/>", "clapper": "<path d=\"M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z\"/><path d=\"m6.2 5.3 3.1 3.9\"/><path d=\"m12.4 3.4 3.1 4\"/><path d=\"M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>", "star": "<polygon points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\"/>", "user": "<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1\"/>", "shield": "<path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/>", "flame": "<path d=\"M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z\"/>", "back": "<path d=\"M19 12H5\"/><path d=\"m12 19-7-7 7-7\"/>", "login": "<path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"/><path d=\"m10 17 5-5-5-5\"/><path d=\"M15 12H3\"/>", "userplus": "<path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M19 8v6\"/><path d=\"M22 11h-6\"/>", "logout": "<path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/>", "x": "<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>", "upload": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m17 8-5-5-5 5\"/><path d=\"M12 3v12\"/>", "download": "<path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M12 15V3\"/>", "check": "<path d=\"M20 6 9 17l-5-5\"/>", "trash": "<path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>", "refresh": "<path d=\"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8\"/><path d=\"M21 3v5h-5\"/><path d=\"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16\"/><path d=\"M8 16H3v5\"/>", "copy": "<rect x=\"9\" y=\"9\" width=\"13\" height=\"13\" rx=\"2\"/><path d=\"M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\"/>", "audio": "<path d=\"M2 10v3\"/><path d=\"M6 6v11\"/><path d=\"M10 3v18\"/><path d=\"M14 8v7\"/><path d=\"M18 5v13\"/><path d=\"M22 10v3\"/>", "mic": "<rect x=\"9\" y=\"2\" width=\"6\" height=\"12\" rx=\"3\"/><path d=\"M19 10v1a7 7 0 0 1-14 0v-1\"/><path d=\"M12 18v4\"/>", "text": "<path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><path d=\"M14 2v6h6\"/><path d=\"M16 13H8\"/><path d=\"M16 17H8\"/><path d=\"M10 9H8\"/>", "globe": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M2 12h20\"/><path d=\"M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z\"/>", "lang": "<path d=\"m5 8 6 6\"/><path d=\"m4 14 6-6 2-3\"/><path d=\"M2 5h12\"/><path d=\"M7 2h1\"/><path d=\"m22 22-5-10-5 10\"/><path d=\"M14 18h6\"/>", "timer": "<line x1=\"10\" x2=\"14\" y1=\"2\" y2=\"2\"/><line x1=\"12\" x2=\"15\" y1=\"14\" y2=\"11\"/><circle cx=\"12\" cy=\"14\" r=\"8\"/>", "play": "<polygon points=\"6 3 20 12 6 21 6 3\"/>", "pause": "<rect x=\"14\" y=\"4\" width=\"4\" height=\"16\" rx=\"1\"/><rect x=\"6\" y=\"4\" width=\"4\" height=\"16\" rx=\"1\"/>", "alert": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v4\"/><path d=\"M12 16h.01\"/>", "info": "<circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/>"};
+function ic(n, cls){ return `<svg class="${cls||'i'}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`; }
+
 /* ===================== STATE ===================== */
 const state = {
   usage: { textUsed: 0, textMax: 10, videoUsed: 0, videoMax: 3 },
@@ -42,7 +46,7 @@ function showToast(msg, type){
   const stack = document.getElementById('toastStack');
   const t = document.createElement('div');
   t.className = 'toast' + (type ? ' '+type : '');
-  t.innerHTML = `<span>${type==='error'?'⚠':(type==='success'?'✓':'ℹ')}</span><span>${msg}</span>`;
+  t.innerHTML = `<span class="t-ic">${ic(type==='error'?'alert':(type==='success'?'check':'info'))}</span><span>${msg}</span>`;
   stack.appendChild(t);
   setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s ease'; setTimeout(()=>t.remove(),300); }, 4200);
 }
@@ -380,10 +384,10 @@ function renderResultCard(id, c, topic, snap){
     <div class="rc-cta" id="${id}-cta">${esc(c.cta)}</div>
     <div class="rc-tags">${c.hashtags.map(h=>`<span>${esc(h)}</span>`).join('')}</div>
     <div class="rc-actions">
-      <button class="icon-btn primary" onclick="copyCard('${id}')">⧉ Copy</button>
-      <button class="icon-btn" onclick="editCard('${id}')" id="${id}-editbtn">✎ Edit</button>
-      <button class="icon-btn" onclick="saveCard('${id}')" id="${id}-savebtn">☆ Save</button>
-      <button class="icon-btn" onclick="regenerateCard('${id}')">↻ Regenerate</button>
+      <button class="icon-btn primary" onclick="copyCard('${id}')">${ic('copy')} Copy</button>
+      <button class="icon-btn" onclick="editCard('${id}')" id="${id}-editbtn">${ic('pen')} Edit</button>
+      <button class="icon-btn" onclick="saveCard('${id}')" id="${id}-savebtn">${ic('star')} Save</button>
+      <button class="icon-btn" onclick="regenerateCard('${id}')">${ic('refresh')} Regenerate</button>
     </div>`;
   return div;
 }
@@ -402,14 +406,14 @@ function editCard(id){
   const body = document.getElementById(id+'-body');
   const editing = body.getAttribute('contenteditable') === 'true';
   body.setAttribute('contenteditable', editing ? 'false' : 'true');
-  document.getElementById(id+'-editbtn').textContent = editing ? '✎ Edit' : '✓ Done';
+  document.getElementById(id+'-editbtn').innerHTML = editing ? ic('pen')+' Edit' : ic('check')+' Done';
   if(!editing) body.focus();
 }
 function saveCard(id){
   const btn = document.getElementById(id+'-savebtn');
   const already = btn.classList.contains('saved');
   btn.classList.toggle('saved');
-  btn.textContent = already ? '☆ Save' : '★ Saved';
+  btn.innerHTML = already ? ic('star')+' Save' : ic('star','i fill')+' Saved';
   if(!already){
     const card = document.getElementById(id);
     const entry = { id: 'sv'+id, topic: card.dataset.topic, platform: card.dataset.platform, tone: card.dataset.tone, text: cardText(id) };
@@ -542,10 +546,10 @@ function renderHistory(){
       <td><span class="pill-sm">${esc(h.platform)}</span></td>
       <td><span class="pill-sm">${esc(h.tone)}</span></td>
       <td><span class="table-cap-text">${esc(h.caption)}</span></td>
-      <td>${h.saved ? '★' : '—'}</td>
+      <td>${h.saved ? ic('star','i fill gold') : '—'}</td>
       <td class="row-actions">
-        <button title="Copy" onclick="historyCopy('${h.id}')">⧉</button>
-        <button title="Delete" onclick="historyDelete('${h.id}')">🗑</button>
+        <button title="Copy" aria-label="Copy" onclick="historyCopy('${h.id}')">${ic('copy')}</button>
+        <button title="Delete" aria-label="Delete" onclick="historyDelete('${h.id}')">${ic('trash')}</button>
       </td>
     </tr>`).join('');
 }
@@ -569,8 +573,8 @@ function renderSaved(){
       <div class="rc-top"><span class="rc-tag">${esc(s.platform)} · ${esc(s.tone)}</span></div>
       <div class="rc-body" style="white-space:pre-wrap;">${esc(s.text)}</div>
       <div class="rc-actions">
-        <button class="icon-btn" onclick="savedCopy('${s.id}')">⧉ Copy</button>
-        <button class="icon-btn" onclick="unsaveCaption('${s.id}')">✕ Remove</button>
+        <button class="icon-btn" onclick="savedCopy('${s.id}')">${ic('copy')} Copy</button>
+        <button class="icon-btn" onclick="unsaveCaption('${s.id}')">${ic('x')} Remove</button>
       </div>
     </div>`).join('');
 }
@@ -634,12 +638,12 @@ function setTheme(mode){
 const ALLOWED_EXT = ['mp4','mov','webm','mp3','wav'];
 const MAX_FILE_MB = 300;
 const PIPELINE_STAGES = [
-  { key:'extract', icon:'🎧', title:'Extracting audio', sub:'Pulling the voice track from your file' },
-  { key:'detect', icon:'👂', title:'Detecting voice', sub:'Checking for spoken audio' },
-  { key:'transcribe', icon:'📝', title:'Transcribing speech', sub:'Converting speech to text' },
-  { key:'lang', icon:'🌐', title:'Detecting language', sub:'Urdu, Roman Urdu, English or mixed' },
-  { key:'roman', icon:'ﻝ', title:'Converting to Roman Urdu', sub:'Rewriting Urdu speech into natural Roman Urdu' },
-  { key:'align', icon:'⏱', title:'Aligning timestamps', sub:'Syncing each line to your voiceover' }
+  { key:'extract', icon:'audio', title:'Extracting audio', sub:'Pulling the voice track from your file' },
+  { key:'detect', icon:'mic', title:'Detecting voice', sub:'Checking for spoken audio' },
+  { key:'transcribe', icon:'text', title:'Transcribing speech', sub:'Converting speech to text' },
+  { key:'lang', icon:'globe', title:'Detecting language', sub:'Urdu, Roman Urdu, English or mixed' },
+  { key:'roman', icon:'lang', title:'Converting to Roman Urdu', sub:'Rewriting Urdu speech into natural Roman Urdu' },
+  { key:'align', icon:'timer', title:'Aligning timestamps', sub:'Syncing each line to your voiceover' }
 ];
 const DEMO_LINES = [
   { text:"Assalam o Alaikum! Umeed hai aap sab bilkul theek hongay.", lang:'Mixed' },
@@ -802,7 +806,7 @@ async function startRealPipeline(blobUrl, originalFilename){
   document.getElementById('pipelinePanel').classList.remove('hidden');
   document.getElementById('pipelineSteps').innerHTML = PIPELINE_STAGES.map(s => `
     <div class="pipe-step" id="stage-${s.key}">
-      <div class="pipe-icon">${s.icon}</div>
+      <div class="pipe-icon" data-icon="${s.icon}">${ic(s.icon)}</div>
       <div class="pipe-text"><b>${s.title}</b><span>${s.sub}</span></div>
     </div>`).join('');
 
@@ -840,7 +844,7 @@ function animatePipelineStages(holdUntil){
       if(i>0){
         const prev = document.getElementById('stage-'+PIPELINE_STAGES[i-1].key);
         prev.classList.replace('active','done');
-        prev.querySelector('.pipe-icon').textContent = '✓';
+        prev.querySelector('.pipe-icon').innerHTML = ic('check');
       }
       if(holdUntil && i === PIPELINE_STAGES.length - 1 && !holdUntil.settled){
         const el = document.getElementById('stage-'+PIPELINE_STAGES[i].key);
@@ -872,7 +876,7 @@ function finishPipelineReal(data){
     state.usage.videoUsed = Math.min(state.usage.videoMax, state.usage.videoUsed + minutesNeeded);
     updateUsageDisplays();
 
-    state.video.segments = rawSegments.map((s,i) => ({ id:'seg'+i, start:s.start, end:s.end, text:s.text, lang:s.lang }));
+    state.video.segments = rawSegments.map((s,i) => ({ id:'seg'+i, start:s.start, end:s.end, text:s.text, lang:s.lang, words:s.words || null }));
 
     document.getElementById('pipelinePanel').classList.add('hidden');
     document.getElementById('videoWorkspace').classList.remove('hidden');
@@ -882,7 +886,7 @@ function finishPipelineReal(data){
     vid.controls = false;
     vid.onloadedmetadata = () => { updateTimeLabel(); };
     vid.ontimeupdate = onVideoTimeUpdate;
-    vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
+    vid.onended = () => { document.getElementById('playBtn').innerHTML = ic('play','i fill'); };
 
     document.getElementById('detectedLangTag').textContent = mostCommonLang(state.video.segments);
     renderTranscript();
@@ -922,7 +926,7 @@ function startPipelineDemo(file){
   document.getElementById('pipelinePanel').classList.remove('hidden');
   document.getElementById('pipelineSteps').innerHTML = PIPELINE_STAGES.map(s => `
     <div class="pipe-step" id="stage-${s.key}">
-      <div class="pipe-icon">${s.icon}</div>
+      <div class="pipe-icon" data-icon="${s.icon}">${ic(s.icon)}</div>
       <div class="pipe-text"><b>${s.title}</b><span>${s.sub}</span></div>
     </div>`).join('');
   animatePipelineStages().then(() => setTimeout(()=>finishPipelineDemo(file), 200));
@@ -964,7 +968,7 @@ function finishPipelineDemo(file){
     vid.controls = false;
     vid.onloadedmetadata = () => { updateTimeLabel(); };
     vid.ontimeupdate = onVideoTimeUpdate;
-    vid.onended = () => { document.getElementById('playBtn').textContent = '▶'; };
+    vid.onended = () => { document.getElementById('playBtn').innerHTML = ic('play','i fill'); };
 
     document.getElementById('detectedLangTag').textContent = mostCommonLang(segments) + ' (demo transcript)';
     renderTranscript();
@@ -989,7 +993,7 @@ function mostCommonLang(segments){
 function renderTranscript(){
   const list = document.getElementById('transcriptList');
   if(!state.video.segments || !state.video.segments.length){
-    list.innerHTML = `<div class="empty-state"><div class="ic">📝</div><h4>No caption lines yet</h4><p>Something prevented captions from generating for this clip. Try re-uploading, or a different file.</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="ic">${ic('text','i lg')}</div><h4>No caption lines yet</h4><p>Something prevented captions from generating for this clip. Try re-uploading, or a different file.</p></div>`;
     return;
   }
   list.innerHTML = state.video.segments.map(s => `
@@ -1000,12 +1004,12 @@ function renderTranscript(){
       </div>
       <textarea class="seg-text" rows="2" onclick="event.stopPropagation()" oninput="updateSegText('${s.id}',this.value)">${esc(s.text)}</textarea>
       <span class="seg-lang">${esc(s.lang)}</span>
-      <button class="seg-del" onclick="event.stopPropagation();deleteSegment('${s.id}')">✕</button>
+      <button class="seg-del" onclick="event.stopPropagation();deleteSegment('${s.id}')" aria-label="Delete line">${ic('x')}</button>
     </div>`).join('');
 }
 function updateSegTime(id, field, val){
   const s = state.video.segments.find(x=>x.id===id);
-  if(s) s[field] = parseFloat(val) || 0;
+  if(s){ s[field] = parseFloat(val) || 0; s.words = null; }   // manual timing edit: drop Whisper word times
   invalidateCues();
 }
 function updateSegText(id, val){
@@ -1021,14 +1025,14 @@ function deleteSegment(id){
 function jumpToSegment(id){
   const s = state.video.segments.find(x=>x.id===id);
   const vid = document.getElementById('previewVideo');
-  if(s){ vid.currentTime = s.start; vid.play(); document.getElementById('playBtn').textContent = '❚❚'; }
+  if(s){ vid.currentTime = s.start; vid.play(); document.getElementById('playBtn').innerHTML = ic('pause','i fill'); }
 }
 
 /* preview playback + caption sync */
 function togglePlay(){
   const vid = document.getElementById('previewVideo');
-  if(vid.paused){ vid.play(); document.getElementById('playBtn').textContent = '❚❚'; }
-  else { vid.pause(); document.getElementById('playBtn').textContent = '▶'; }
+  if(vid.paused){ vid.play(); document.getElementById('playBtn').innerHTML = ic('pause','i fill'); }
+  else { vid.pause(); document.getElementById('playBtn').innerHTML = ic('play','i fill'); }
 }
 function onVideoTimeUpdate(){
   const vid = document.getElementById('previewVideo');
@@ -1247,7 +1251,7 @@ function pickExportMime(){
 function setExportUI(running, pct, label){
   const btn = document.getElementById('exportBtn'), wrap = document.getElementById('exportProgress');
   if(!btn || !wrap) return;
-  btn.textContent = running ? '✕ Cancel export' : '⬇ Export captioned video';
+  btn.innerHTML = running ? ic('x')+' Cancel export' : ic('download')+' Export captioned video';
   wrap.classList.toggle('hidden', !running && !label);
   if(pct != null) document.getElementById('exportBar').style.width = pct + '%';
   document.getElementById('exportLabel').textContent = label || '';
@@ -1365,7 +1369,7 @@ function init(){
     const params = new URLSearchParams(window.location.search);
     const clean = () => window.history.replaceState({}, '', window.location.pathname);
     if(params.get('upgraded') === '1'){
-      showToast('You are now on Lafzaly Pro! 🎉', 'success');
+      showToast('You are now on Lafzaly Pro!', 'success');
       clean();
     } else if(params.get('upgrade_cancelled') === '1'){
       showToast('Checkout was cancelled — no charge was made.', 'success');

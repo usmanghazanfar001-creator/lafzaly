@@ -478,3 +478,24 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
 .pos-grid button.on{background:var(--emerald); border-color:var(--lime);}
 .pos-grid button.on i{background:#fff; opacity:1;}
 .pos-hint{font-size:12px; color:var(--dark-text-dim); margin-top:6px;}
+
+/* line icons */
+svg.i{width:1.15em; height:1.15em; flex-shrink:0; vertical-align:-0.2em;}
+svg.i.lg{width:34px; height:34px; stroke-width:1.5;}
+svg.i.fill{fill:currentColor;}
+svg.i.gold{color:var(--marigold); fill:var(--marigold);}
+svg.i.flame{color:var(--marigold); fill:rgba(242,169,59,.25);}
+.side-link .ic{display:inline-flex; align-items:center; justify-content:center; width:20px; font-size:17px;}
+.side-link .ic svg{width:18px; height:18px;}
+.icon-btn,.btn-sm,.back-to-site,.profile-menu a,.profile-menu button,.usage-pill{display:inline-flex; align-items:center; gap:7px;}
+.profile-menu a,.profile-menu button{display:flex;}
+.empty-state .ic,.dropzone .ic{display:flex; justify-content:center; color:var(--lime); opacity:.85;}
+.pipe-icon svg{width:16px; height:16px;}
+.pipe-step:not(.active):not(.done) .pipe-icon{color:var(--dark-text-dim);}
+.toast .t-ic{display:inline-flex;}
+#playBtn{display:flex; align-items:center; justify-content:center;}
+#playBtn svg{width:18px; height:18px;}
+.pricing-tick,.tick{display:flex; align-items:center; gap:8px;}
+.tick svg{color:var(--lime); width:15px; height:15px;}
+.seg-del{display:inline-flex; align-items:center; justify-content:center;}
+.seg-del svg,.history-table button svg{width:16px; height:16px;}

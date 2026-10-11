@@ -26,10 +26,13 @@
       if (!words.length || !(seg.end > seg.start)) return;
       // Time is shared out by word length (longer words take longer to say) — whisper's own
       // word times are not kept after the Roman Urdu rewrite, so this is an estimate.
+      var real = Array.isArray(seg.words) && seg.words.length === words.length ? seg.words : null;
       var weights = words.map(function (w) { return w.length + 1.5; });
       var total = weights.reduce(function (a, b) { return a + b; }, 0);
       var dur = seg.end - seg.start, acc = 0;
-      var timed = words.map(function (w, i) {
+      var timed = real ? words.map(function (w, i) {
+        return { text: w, start: real[i][0], end: Math.max(real[i][1], real[i][0] + 0.05) };
+      }) : words.map(function (w, i) {
         var s = seg.start + dur * (acc / total); acc += weights[i];
         return { text: w, start: s, end: seg.start + dur * (acc / total) };
       });
