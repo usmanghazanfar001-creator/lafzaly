@@ -38,7 +38,7 @@ Reply with JSON only: {"captions":[{"hook":"","body":"","cta":"","hashtags":["#.
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.9, max_tokens: 2500, response_format: { type: 'json_object' } })
+    body: JSON.stringify({ model: process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-120b', messages: [{ role: 'user', content: prompt }], temperature: 0.9, reasoning_effort: 'low', max_completion_tokens: 6000, response_format: { type: 'json_object' } })
   });
   if (!r.ok) return res.status(502).json({ error: 'AI service error (' + r.status + ').' });
   const data = await r.json();

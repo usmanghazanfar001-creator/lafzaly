@@ -806,8 +806,7 @@ async function startRealPipeline(blobUrl, originalFilename){
       <div class="pipe-text"><b>${s.title}</b><span>${s.sub}</span></div>
     </div>`).join('');
 
-  const animation = animatePipelineStages();
-  const request = fetch('/api/transcribe', {
+  let request = fetch('/api/transcribe', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ blobUrl, durationSeconds: state.video.duration, originalFilename })
   }).then(async r => {
@@ -815,6 +814,10 @@ async function startRealPipeline(blobUrl, originalFilename){
     if(!r.ok) throw new Error(data.error || 'Transcription failed.');
     return data;
   });
+  const settle = request.then(() => {}, () => {});
+  request.settled = false; settle.then(() => { request.settled = true; });
+  const gate = Object.assign(settle, { get settled(){ return request.settled; } });
+  const animation = animatePipelineStages(gate);
 
   try{
     const [, data] = await Promise.all([animation, request]);
@@ -828,7 +831,9 @@ async function startRealPipeline(blobUrl, originalFilename){
   }
 }
 
-function animatePipelineStages(){
+// Advances through the stages while the server works, but parks on the last one until
+// `holdUntil` (the real request) settles, so the UI never claims "done" while still waiting.
+function animatePipelineStages(holdUntil){
   return new Promise(resolve => {
     let i = 0;
     function runStage(){
@@ -836,6 +841,12 @@ function animatePipelineStages(){
         const prev = document.getElementById('stage-'+PIPELINE_STAGES[i-1].key);
         prev.classList.replace('active','done');
         prev.querySelector('.pipe-icon').textContent = '✓';
+      }
+      if(holdUntil && i === PIPELINE_STAGES.length - 1 && !holdUntil.settled){
+        const el = document.getElementById('stage-'+PIPELINE_STAGES[i].key);
+        el.classList.add('active'); el.querySelector('.pipe-icon').innerHTML = '<div class="spinner"></div>';
+        holdUntil.then(() => { i++; runStage(); });
+        return;
       }
       if(i >= PIPELINE_STAGES.length){ resolve(); return; }
       const el = document.getElementById('stage-'+PIPELINE_STAGES[i].key);

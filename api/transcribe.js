@@ -161,13 +161,11 @@ async function handler(req, res) {
       const dur = Number(whisperData.duration) || declaredDuration || 0;
       const sparse = d => dur > 4 && wordsOf(d).length < dur * 0.8;   // normal speech is ~2 words/sec
       if (sparse(whisperData)) {
+        // run the retries in parallel so a sparse result costs one extra round-trip, not three
+        const tries = await Promise.all([['ur', 'whisper-large-v3'], ['hi', 'whisper-large-v3']].map(([alt, model]) =>
+          runWhisper(alt, model).catch(e => { console.warn('whisper retry failed:', alt, e.message); return null; })));
         let best = whisperData;
-        for (const [alt, model] of [['ur', 'whisper-large-v3'], ['hi', 'whisper-large-v3'], [null, 'whisper-large-v3']]) {
-          try {
-            const d = await runWhisper(alt, model);
-            if (wordsOf(d).length > wordsOf(best).length) best = d;
-          } catch (e) { console.warn('whisper retry failed:', alt, e.message); }
-        }
+        for (const d of tries) if (d && wordsOf(d).length > wordsOf(best).length) best = d;
         whisperData = best;
       }
     } catch (e) {
@@ -303,10 +301,11 @@ ${JSON.stringify(lines)}`;
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-120b',   // llama-3.3-70b-versatile was shut down on Groq 2026-08-16
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
-      max_tokens: 4000,
+      reasoning_effort: 'low',
+      max_completion_tokens: 8000,
       response_format: { type: 'json_object' }
     })
   });
