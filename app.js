@@ -1490,3 +1490,19 @@ function init(){
   });
 }
 document.addEventListener('DOMContentLoaded', init);
+/* Subtitle-language switch (video upload) */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('#langSwitch button[data-val]'); if(!btn) return;
+  const sw = btn.parentElement;
+  sw.dataset.value = btn.dataset.val;
+  sw.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(b === btn)));
+  document.getElementById('videoLang').value = btn.dataset.val;
+});
+document.addEventListener('keydown', e => {
+  const btn = e.target.closest && e.target.closest('#langSwitch button[data-val]'); if(!btn) return;
+  if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+    e.preventDefault();
+    const other = Array.from(btn.parentElement.querySelectorAll('button')).find(b => b !== btn);
+    other.focus(); other.click();
+  }
+});

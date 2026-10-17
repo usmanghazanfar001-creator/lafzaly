@@ -502,3 +502,32 @@ svg.i.flame{color:var(--marigold); fill:rgba(242,169,59,.25);}
 .video-workspace > *{min-width:0;}
 .preview-frame{width:min(100%, 360px);}
 .preview-controls{flex-wrap:wrap; min-width:0;}
+
+/* ===== Subtitle language switch ===== */
+.lang-switch{position:relative; display:grid; grid-template-columns:1fr 1fr; max-width:440px; background:var(--dark-bg); border:1px solid var(--dark-line); border-radius:14px; padding:4px; isolation:isolate;}
+.lang-switch .ls-thumb{position:absolute; z-index:-1; top:4px; bottom:4px; left:4px; width:calc(50% - 4px); border-radius:10px; background:linear-gradient(135deg,var(--emerald),#0b7a5b); box-shadow:0 6px 18px -6px rgba(49,214,161,.55); transition:transform .35s cubic-bezier(.3,1.25,.5,1);}
+.lang-switch[data-value="english"] .ls-thumb{transform:translateX(100%);}
+.lang-switch button{all:unset; box-sizing:border-box; cursor:pointer; display:flex; flex-direction:column; gap:2px; padding:10px 14px; border-radius:10px; color:var(--dark-text-dim); transition:color .25s;}
+.lang-switch button b{font:600 14.5px var(--font-display); letter-spacing:-.1px;}
+.lang-switch button small{font-size:12px; opacity:.85; line-height:1.3;}
+.lang-switch button[aria-checked="true"]{color:#fff;}
+.lang-switch button:hover:not([aria-checked="true"]){color:var(--dark-text);}
+.lang-switch button:focus-visible{outline:2px solid var(--lime); outline-offset:1px;}
+@media (max-width:480px){ .lang-switch button{padding:9px 10px;} .lang-switch button small{font-size:11px;} }
+
+/* ===== Captions-style animated website ===== */
+.kw{display:inline-block; position:relative; white-space:pre; isolation:isolate;}
+.js-kw .kw{opacity:.22; transform:translateY(.12em); transition:opacity .25s, transform .25s;}
+.js-kw .kw.on{opacity:1; transform:none;}
+.js-kw .kw.pop::before{content:""; position:absolute; inset:.06em -.12em .02em; background:var(--lime); border-radius:.22em; z-index:-1; animation:kwpop .55s ease-out forwards;}
+.hero h1 .accent .kw.pop::before{background:var(--marigold);}
+@keyframes kwpop{0%{opacity:0; transform:scale(.7);} 25%{opacity:.95; transform:scale(1.06);} 100%{opacity:0; transform:scale(1);}}
+/* hero phone: karaoke caption */
+.demo-caption-text .w{display:inline-block; opacity:.45; transition:color .15s, opacity .15s, transform .18s;}
+.demo-caption-text .w.done{opacity:.95;}
+.demo-caption-text .w.act{opacity:1; color:var(--marigold); transform:scale(1.14); text-shadow:0 0 14px rgba(242,169,59,.45);}
+@media (prefers-reduced-motion:reduce){
+  .js-kw .kw{opacity:1; transform:none; transition:none;}
+  .js-kw .kw.pop::before{display:none;}
+  .demo-caption-text .w{transition:none;}
+}

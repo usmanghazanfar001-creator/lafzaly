@@ -126,12 +126,14 @@
         <div class="content-head"><h2>Caption my video</h2><p>Upload a video or audio voiceover — Lafzaly transcribes it and writes subtitles in Roman Urdu or English, synced to your voice.</p></div>
 
         <div class="panel" id="uploadPanel">
-          <div class="field-block" style="margin-bottom:16px;">
-            <label class="field-label" for="videoLang">Subtitle language</label>
-            <select class="input-dark" id="videoLang" style="max-width:320px;">
-              <option value="roman">Roman Urdu (Urdu in English letters)</option>
-              <option value="english">English (translated from your voice)</option>
-            </select>
+          <div class="field-block" style="margin-bottom:18px;">
+            <span class="field-label" id="lblVideoLang">Subtitle language</span>
+            <div class="lang-switch" id="langSwitch" role="radiogroup" aria-labelledby="lblVideoLang" data-value="roman">
+              <span class="ls-thumb" aria-hidden="true"></span>
+              <button type="button" role="radio" aria-checked="true" data-val="roman"><b>Roman Urdu</b><small>Urdu in English letters</small></button>
+              <button type="button" role="radio" aria-checked="false" data-val="english"><b>English</b><small>Translated from your voice</small></button>
+              <input type="hidden" id="videoLang" value="roman">
+            </div>
           </div>
           <label class="dropzone" id="dropzone" for="fileInput" style="display:block;">
             <div class="ic"><svg class="i lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></div>

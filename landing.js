@@ -15,27 +15,75 @@ const HERO_DEMOS = [
   { text:"Naya menu launch ho gaya hai! Aaj hi visit karein aur pehla order par mufta drink paayein.", tags:['#Promotional','#ShopNow','#Karachi'] }
 ];
 let heroIdx = 0;
+// Hero phone: the demo caption plays like a real word-by-word (karaoke) subtitle.
 function typewriterLoop(){
   const el = document.getElementById('heroTypewriter');
   const tagsEl = document.getElementById('heroTags');
   if(!el) return;
   const demo = HERO_DEMOS[heroIdx % HERO_DEMOS.length];
-  let i = 0;
+  const words = demo.text.split(' ');
   tagsEl.innerHTML = '';
-  el.innerHTML = '<span class="cursor"></span>';
-  const typeIv = setInterval(()=>{
-    i++;
-    el.innerHTML = demo.text.slice(0,i) + '<span class="cursor"></span>';
-    if(i >= demo.text.length){
-      clearInterval(typeIv);
+  el.innerHTML = words.map(w => `<span class="w">${w}</span>`).join(' ');
+  const spans = el.querySelectorAll('.w');
+  if(REDUCED){
+    spans.forEach(s => s.classList.add('done'));
+    tagsEl.innerHTML = demo.tags.map(t=>`<span class="demo-tag">${t}</span>`).join('');
+    setTimeout(()=>{ heroIdx++; typewriterLoop(); }, 4200);
+    return;
+  }
+  let i = 0;
+  const iv = setInterval(()=>{
+    if(i > 0){ spans[i-1].classList.remove('act'); spans[i-1].classList.add('done'); }
+    if(i >= spans.length){
+      clearInterval(iv);
       tagsEl.innerHTML = demo.tags.map(t=>`<span class="demo-tag">${t}</span>`).join('');
       setTimeout(()=>{ heroIdx++; typewriterLoop(); }, 2600);
+      return;
     }
-  }, 28);
+    spans[i].classList.add('act');
+    i++;
+  }, 240);
 }
 
+// The page headings caption themselves: words light up one by one, like subtitles being spoken.
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+function wrapWords(node, out){
+  Array.from(node.childNodes).forEach(n => {
+    if(n.nodeType === 3){
+      const frag = document.createDocumentFragment();
+      n.textContent.split(/(\s+)/).forEach(part => {
+        if(!part) return;
+        if(/^\s+$/.test(part)){ frag.appendChild(document.createTextNode(part)); return; }
+        const s = document.createElement('span'); s.className = 'kw'; s.textContent = part; out.push(s); frag.appendChild(s);
+      });
+      n.replaceWith(frag);
+    } else if(n.nodeType === 1 && n.tagName !== 'BR'){ wrapWords(n, out); }
+  });
+}
+function playCaption(h){
+  const words = h._kw; let i = 0;
+  const step = () => {
+    if(i > 0) words[i-1].classList.remove('pop');
+    if(i >= words.length) return;
+    words[i].classList.add('on', 'pop'); i++;
+    setTimeout(step, Math.max(70, Math.min(150, 1100 / words.length)));
+  };
+  step();
+}
+function initCaptionHeadings(){
+  const heads = Array.from(document.querySelectorAll('.hero h1, .section-head h2'));
+  if(!heads.length) return;
+  heads.forEach(h => { h._kw = []; wrapWords(h, h._kw); });
+  if(REDUCED || !('IntersectionObserver' in window)){ return; }
+  document.documentElement.classList.add('js-kw');
+  const io = new IntersectionObserver(entries => entries.forEach(en => {
+    if(en.isIntersecting){ io.unobserve(en.target); playCaption(en.target); }
+  }), { threshold:.4 });
+  heads.forEach(h => io.observe(h));
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+  initCaptionHeadings();
   typewriterLoop();
   fetch('/api/auth-me').then(r=>r.json()).then(d=>{
     if(d && d.user){

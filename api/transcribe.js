@@ -143,6 +143,8 @@ async function handler(req, res) {
       form.append('response_format', 'verbose_json');
       form.append('temperature', '0');
       if (lang) form.append('language', lang);
+      // Bias towards the English words Pakistani speakers mix into Urdu (numbers, units, common creator words).
+      if (lang === 'ur' || lang === 'hi') form.append('prompt', 'Urdu aur English mix: sixty seconds, one minute, video, subscribe, tips, free, followers, Instagram, TikTok.');
       form.append('timestamp_granularities[]', 'word');
       form.append('timestamp_granularities[]', 'segment');
       const r = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
@@ -322,6 +324,7 @@ async function callRoman(lines, english) {
   const prompt = english ? ENGLISH_PROMPT(lines) : `You convert speech-transcript lines into natural, conversational Pakistani Roman Urdu: Urdu written ONLY in English/Latin letters, the way Pakistani creators text (e.g. "Aap sab kaise hain? Aaj hum baat karenge..."). The input lines may be in Urdu script, Hindi/Devanagari script, Punjabi, or English. Rules:
 - This is a TRANSCRIPT, so be faithful and correct: transliterate exactly what was said, word for word, into standard Roman Urdu spelling used in Pakistani media and messaging: hai, hain, nahi, kya, kaise, aap, hum, main, mein, ko, ka, ki, ke, aaj, kal, bohat, acha, theek, karna, kiya, hoga, lekin, aur, kyun, yeh, woh, toh, bhi, sath, abhi, phir. Spell each word the same way every time. Do NOT use SMS shorthand (no "krna", "nhi", "hm", "bht", "ap").
 - The lines are consecutive speech from ONE video. The speech recognizer often mishears Urdu, so use the surrounding lines as context to repair words that are clearly garbled into the most likely real Urdu words (e.g. "hum iar pish toh bohat hai lekin skon nam" -> "Hamare paas paisa toh bohat hai, lekin sukoon nahi."). Only repair when the intended phrase is clear; otherwise keep what was heard. Never add ideas that were not spoken.
+- Urdu speakers often say English words and numbers (sixty, second, minute, video, free, tips, followers, percent, discount). The recognizer frequently mangles them into Urdu-sounding junk (e.g. "sakty second" really means "sixty second"). When a word looks like a garbled English word or number in context, restore the proper English word, spelled correctly in English.
 - Add proper punctuation: commas at natural pauses, a full stop, question mark or exclamation mark at the end of each line, and a capital first letter.
 - Keep natural spoken Urdu word order and grammar. Keep the speaker's own English words (video, subscribe, like, share, tips) in English.
 - Output must use only Latin letters, digits and punctuation. NEVER output Urdu, Arabic, Hindi or Gurmukhi script.
