@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const NON_LATIN = /[\u0600-\u06FF\u0900-\u097F]/;
 const ok = (c) => c && typeof c.hook === 'string' && typeof c.body === 'string' && c.hook && c.body && !NON_LATIN.test(c.hook + c.body);
 
-// POST { action:'generate', topic, platform, type, tone, length, count } -> { captions: [{hook, body, cta, hashtags}] }
+// POST { action:'generate', topic, platform, type, tone, length, count, language } -> { captions: [{hook, body, cta, hashtags}] }
 async function generate(req, res) {
   if (!process.env.GROQ_API_KEY) return res.status(503).json({ error: 'AI generation is not configured.' });
   const b = req.body || {};
@@ -24,7 +24,17 @@ async function generate(req, res) {
   const length = ['Short', 'Medium', 'Long'].includes(b.length) ? b.length : 'Medium';
   const count = Math.min(Math.max(parseInt(b.count, 10) || 1, 1), 5);
   const words = { Short: '12-25', Medium: '30-55', Long: '60-110' }[length];
-  const prompt = `You write social media captions for Pakistani creators in ROMAN URDU: Urdu language written with the English/Latin alphabet, exactly how Pakistanis type on WhatsApp and Instagram (e.g. "Aap ka din kaisa guzra? Yeh naya offer miss mat karna!").
+  const english = String(b.language || '').toLowerCase() === 'english';
+  const promptEn = `You write social media captions for creators and small businesses in Pakistan, in natural, friendly ENGLISH.
+Rules:
+- Write ONLY in English (Latin letters). Keep it conversational and scroll-stopping, like a real creator or brand posting on social media. Light emojis are fine but not required.
+- Stay strictly on the topic. Do not invent prices, dates, phone numbers, addresses or claims that are not in the topic.
+- Platform: ${platform}. Content type: ${type}. Tone: ${tone}. Body length: ${words} words.
+- Each caption: "hook" (one scroll-stopping first line), "body", "cta" (one short call to action), "hashtags" (5 to 6 relevant hashtags).
+- Write ${count} clearly different captions.
+Topic (may be in English, Urdu or Roman Urdu; always answer in English): ${JSON.stringify(topic)}
+Reply with JSON only: {"captions":[{"hook":"","body":"","cta":"","hashtags":["#..."]}]}`;
+  const promptUr = `You write social media captions for Pakistani creators in ROMAN URDU: Urdu language written with the English/Latin alphabet, exactly how Pakistanis type on WhatsApp and Instagram (e.g. "Aap ka din kaisa guzra? Yeh naya offer miss mat karna!").
 STYLE: casual WhatsApp/Instagram texting Roman Urdu, like a Pakistani creator talking to followers. Examples of the exact feel: "Hello guys aj hm captions generate krna sikhy gai", "Yaar ye offer miss mat krna, bht kam time reh gya hai", "Kia aap ne abhi tak try nhi kia?". Use the short everyday spellings people actually type: aj, hm, krna/kr, kia, nhi, bht, hai/hain, ap, ye/wo, kyun, thora, sath, lye, gai/gye. Mix English words naturally (guys, offer, video, follow, link). Keep it light and short-sentenced, not formal and not bookish.
 Rules:
 - Write ONLY in Latin letters. Never use Urdu/Arabic script or Hindi/Devanagari.
@@ -35,6 +45,7 @@ Rules:
 - Write ${count} clearly different captions.
 Topic (may be in English, Urdu or Roman Urdu): ${JSON.stringify(topic)}
 Reply with JSON only: {"captions":[{"hook":"","body":"","cta":"","hashtags":["#..."]}]}`;
+  const prompt = english ? promptEn : promptUr;
   const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },

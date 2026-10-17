@@ -62,8 +62,8 @@
         <div class="gen-shell">
           <section class="gen-composer panel" aria-labelledby="genTitle">
             <div class="gen-head">
-              <h2 id="genTitle">Write Roman Urdu captions</h2>
-              <p>Describe your post once. Lafzaly writes the hook, caption, call to action and hashtags for your platform.</p>
+              <h2 id="genTitle">Write your captions</h2>
+              <p>Describe your post once. Pick Roman Urdu or English. Lafzaly writes the hook, caption, call to action and hashtags for your platform.</p>
             </div>
             <div class="gen-scroll">
               <div class="field-block">
@@ -71,6 +71,10 @@
                 <textarea class="input-dark" id="topicInput" rows="4" maxlength="300" placeholder="e.g. Real estate project on Canal Road Faisalabad, launching soon with easy installments" oninput="updateTopicCount()" onkeydown="topicKey(event)"></textarea>
                 <div class="field-row"><div class="field-hint">Be specific. Lafzaly only writes about what you tell it.</div><span class="field-count" id="topicCount">0/300</span></div>
                 <div class="example-row" id="exampleRow" aria-label="Example posts"></div>
+              </div>
+              <div class="field-block">
+                <span class="field-label" id="lblLanguage">Caption language</span>
+                <div class="chip-group seg" id="languageChips" role="radiogroup" aria-labelledby="lblLanguage"></div>
               </div>
               <div class="field-block">
                 <span class="field-label" id="lblPlatform">Platform</span>
@@ -119,9 +123,16 @@
 
       <!-- ===== VIDEO ===== -->
       <div class="app-subview" id="subview-video">
-        <div class="content-head"><h2>Caption my video</h2><p>Upload a video or audio voiceover — Lafzaly transcribes it and writes natural Roman Urdu subtitles, synced to your voice.</p></div>
+        <div class="content-head"><h2>Caption my video</h2><p>Upload a video or audio voiceover — Lafzaly transcribes it and writes subtitles in Roman Urdu or English, synced to your voice.</p></div>
 
         <div class="panel" id="uploadPanel">
+          <div class="field-block" style="margin-bottom:16px;">
+            <label class="field-label" for="videoLang">Subtitle language</label>
+            <select class="input-dark" id="videoLang" style="max-width:320px;">
+              <option value="roman">Roman Urdu (Urdu in English letters)</option>
+              <option value="english">English (translated from your voice)</option>
+            </select>
+          </div>
           <label class="dropzone" id="dropzone" for="fileInput" style="display:block;">
             <div class="ic"><svg class="i lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></div>
             <h4>Drag &amp; drop your video or audio here</h4>
@@ -256,6 +267,13 @@
                         <option value="pill">Solid pill (accent)</option>
                         <option value="glass">Frosted glass</option>
                         <option value="marker">Highlighter marker (accent)</option>
+                        <option value="underline">Underline (accent)</option>
+                        <option value="ribbon">Full-width ribbon (accent)</option>
+                        <option value="bar">Quote bar (accent)</option>
+                        <option value="frame">Outlined frame (accent)</option>
+                        <option value="neonbox">Neon box (accent)</option>
+                        <option value="tape">Tape label (accent)</option>
+                        <option value="vignette">Cinematic vignette</option>
                       </select>
                     </div>
                     <div class="field-block">
@@ -265,6 +283,16 @@
                         <option value="outline">Hard outline</option>
                         <option value="soft">Soft subtle shadow</option>
                         <option value="glow">Neon glow (accent)</option>
+                        <option value="hollow">Hollow outline text</option>
+                        <option value="retro">Retro 3D (accent)</option>
+                        <option value="long">Long shadow</option>
+                        <option value="sticker">Sticker (white edge)</option>
+                        <option value="gradient">Gradient text (colour to accent)</option>
+                        <option value="glitch">Glitch (RGB split)</option>
+                        <option value="chrome">Chrome metal</option>
+                        <option value="fire">Fire gradient</option>
+                        <option value="neonline">Neon outline (accent)</option>
+                        <option value="badge">Badge edge (accent)</option>
                         <option value="none">None</option>
                       </select>
                     </div>

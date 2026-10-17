@@ -19,13 +19,14 @@ const state = {
 };
 
 const CHIP_GROUPS = {
+  language: ['Roman Urdu','English'],
   platform: ['Instagram','TikTok','YouTube Shorts','Facebook','LinkedIn','X'],
   type: ['Funny','Educational','Business','Real Estate','Product','Motivation','Personal','Story','Promotional','Other'],
   tone: ['Casual','Professional','Funny','Emotional','Viral','Friendly','Powerful'],
   length: ['Short','Medium','Long'],
   count: ['1','3','5','10']
 };
-const CHIP_DEFAULTS = { platform:'Instagram', type:'Business', tone:'Casual', length:'Medium', count:'3' };
+const CHIP_DEFAULTS = { language:'Roman Urdu', platform:'Instagram', type:'Business', tone:'Casual', length:'Medium', count:'3' };
 const selection = { ...CHIP_DEFAULTS };
 
 function buildChipGroup(containerId, groupKey){
@@ -261,7 +262,40 @@ function fillTemplate(tpl, topic){
   return tpl.replaceAll('{t}', short).replaceAll('{T}', cap(short));
 }
 
-function generateSingleCaption(topic, platform, type, tone, length){
+const EN_HOOKS = {
+  Casual:["Quick one about {t}.","Okay, let's talk about {t}.","You'll want to hear this: {t}."],
+  Professional:["An update on {t}.","Introducing: {t}.","Here is what you need to know about {t}."],
+  Funny:["Wait till you hear about {t}.","{T}? You won't believe this one.","Tell me you've seen {t} without telling me."],
+  Emotional:["Some things matter more than we admit: {t}.","This one is close to our hearts: {t}.","It wasn't easy, but {t} is finally here."],
+  Viral:["Everyone is talking about {t}.","Stop scrolling: {t}.","{T}. You'll want to share this."],
+  Friendly:["Hey everyone! Let's chat about {t}.","Good news to share: {t}.","Hope you're all doing well. Today it's all about {t}."],
+  Powerful:["{T}. The time is now.","Stop waiting. Start with {t}.","{T} is the chance you don't want to miss."]
+};
+const EN_BODY = {
+  Funny:["{T}? We laughed, we cried, we did it anyway. Here's the story.","People said {t} was hard. We made it look easy."],
+  Educational:["{T} is simpler than it looks. Here's a quick breakdown you can use today.","Let's learn about {t} step by step, in plain words."],
+  Business:["{T} is now easier than ever. We bring you quality and service at a fair price.","Our team is focused on {t} so you get results you can rely on."],
+  "Real Estate":["Interested in {t}? Now is the right time to plan your investment, with location, pricing and payment plans that fit your budget.","{T}: a great opportunity for families and investors."],
+  Product:["{T} is here. Quality and value, made for your everyday life.","We built {t} to make your day easier. See it for yourself."],
+  Motivation:["The road to {t} won't be easy, but every day is a new chance to get better. Keep going.","When {t} feels hard, remember why you started."],
+  Personal:["Sharing something personal today: {t}. I hope you relate.","Some things are worth sharing, and {t} is one of them."],
+  Story:["This is the story of {t}, from the very beginning until now.","It wasn't as easy as it looks. Here's how {t} really happened."],
+  Promotional:["{T}: a limited-time offer. Don't miss it.","Special discount on {t}, for a few days only."],
+  Other:["Let's talk about {t}. There's more to it than you might think.","A closer look at {t}."]
+};
+const EN_CTA = ["Message us for more details.","Tell us what you think in the comments.","Share this with someone who needs it.","Follow for more updates.","Check the link in bio."];
+const EN_TAGS = ['#Pakistan','#SmallBusiness','#Trending','#ForYou','#Tips'];
+function generateSingleCaptionEn(topic, platform, type, tone, length){
+  const hook = fillTemplate(pick(EN_HOOKS[tone] || EN_HOOKS.Casual), topic);
+  let body = fillTemplate(pick(EN_BODY[type] || EN_BODY.Other), topic);
+  if(length==='Long') body += ' ' + fillTemplate(pick(EN_BODY[type] || EN_BODY.Other), topic);
+  else if(length==='Short') body = body.split('.')[0] + '.';
+  const tags = [...EN_TAGS].sort(()=>Math.random()-0.5).slice(0,4);
+  tags.push(PLATFORM_TAG[platform] || '#Social');
+  return { hook, body, cta: pick(EN_CTA), hashtags: tags };
+}
+function generateSingleCaption(topic, platform, type, tone, length, language){
+  if(language === 'English') return generateSingleCaptionEn(topic, platform, type, tone, length);
   const hook = fillTemplate(pick(HOOKS[tone] || HOOKS.Casual), topic);
   let body = fillTemplate(pick(BODY[type] || BODY.Other), topic);
   if(length==='Long'){
@@ -355,11 +389,11 @@ function generateCaptions(){
     const reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
     document.getElementById('resultsPanel').scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'});
   }
-  const snap = { platform:selection.platform, tone:selection.tone, type:selection.type, length:selection.length };
+  const snap = { platform:selection.platform, tone:selection.tone, type:selection.type, length:selection.length, language:selection.language };
   aiCaptions(topic, snap, count).then(ai => {
     wrap.innerHTML = '';
     for(let i=0;i<count;i++){
-      const c = (ai && ai[i]) ? ai[i] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length);
+      const c = (ai && ai[i]) ? ai[i] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length, snap.language);
       state.usage.textUsed++;
       const id = 'r'+(state.resultCounter++);
       addToHistory(topic, snap.platform, snap.tone, c);
@@ -381,7 +415,7 @@ function renderResultCard(id, c, topic, snap){
   div.className = 'result-card';
   div.id = id;
   div.dataset.topic = topic; div.dataset.platform = snap.platform; div.dataset.tone = snap.tone;
-  div.dataset.type = snap.type || selection.type; div.dataset.length = snap.length || selection.length;
+  div.dataset.type = snap.type || selection.type; div.dataset.length = snap.length || selection.length; div.dataset.language = snap.language || selection.language;
   div.innerHTML = `
     <div class="rc-top">
       <div class="rc-lead"><span class="rc-tag">${esc(snap.platform)} · ${esc(snap.tone)}</span><span class="rc-meter" id="${id}-meter"></span></div>
@@ -439,10 +473,10 @@ async function regenerateCard(id){
   const card = document.getElementById(id);
   const topic = card.dataset.topic;
   if(state.usage.textUsed + 1 > state.usage.textMax){ showToast('Daily free limit reached. Upgrade to Pro for unlimited captions.', 'error'); return; }
-  const snap = { platform:card.dataset.platform, type:card.dataset.type, tone:card.dataset.tone, length:card.dataset.length };
+  const snap = { platform:card.dataset.platform, type:card.dataset.type, tone:card.dataset.tone, length:card.dataset.length, language:card.dataset.language };
   showToast('Rewriting…', 'success');
   const ai = await aiCaptions(topic, snap, 1);
-  const c = ai ? ai[0] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length);
+  const c = ai ? ai[0] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length, snap.language);
   state.usage.textUsed++;
   card.querySelector('.rc-hook').textContent = c.hook;
   document.getElementById(id+'-body').textContent = c.body;
@@ -476,7 +510,7 @@ async function apiGet(path){
 async function aiCaptions(topic, snap, count){
   try{
     const res = await fetch('/api/captions', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'generate', topic, platform:snap.platform, type:snap.type, tone:snap.tone, length:snap.length, count }) });
+      body: JSON.stringify({ action:'generate', topic, platform:snap.platform, type:snap.type, tone:snap.tone, length:snap.length, count, language:snap.language }) });
     if(!res.ok) return null;
     const d = await res.json();
     return (d.captions && d.captions.length) ? d.captions : null;
@@ -689,6 +723,30 @@ const STYLE_PRESETS = {
   'Bounce Beat': { font:"'Poppins',sans-serif", size:32, pos:'20%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'outline', anim:'bounce', hl:true, weight:800, case:'upper', chunk:3 },
   'Typewriter': { font:"'Inter',sans-serif", size:24, pos:'20%', align:'center', color:'#ffffff', accent:'#F2A93B', bg:'box', outline:'none', anim:'typewriter', hl:false, weight:600, case:'normal', chunk:0 },
   'Pill Pop': { font:"'Poppins',sans-serif", size:27, pos:'20%', align:'center', color:'#14110E', accent:'#FFD84D', bg:'pill', outline:'none', anim:'word-pop', hl:false, weight:700, case:'normal', chunk:2 },
+  'Retro Pop': { font:"'Poppins',sans-serif", size:32, pos:'20%', align:'center', color:'#FFF4D6', accent:'#FF5A8A', bg:'none', outline:'retro', anim:'word-pop', hl:false, weight:800, case:'upper', chunk:3 },
+  'Hollow': { font:"'Montserrat',sans-serif", size:34, pos:'45%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'hollow', anim:'word-pop', hl:false, weight:800, case:'upper', chunk:2 },
+  'Sunset Gradient': { font:"'Poppins',sans-serif", size:32, pos:'20%', align:'center', color:'#FFE27A', accent:'#FF4F8B', bg:'none', outline:'gradient', anim:'pop', hl:false, weight:800, case:'normal' },
+  'Sticker': { font:"'Poppins',sans-serif", size:31, pos:'20%', align:'center', color:'#14110E', accent:'#FFD84D', bg:'none', outline:'sticker', anim:'word-pop', hl:false, weight:800, case:'upper', chunk:3 },
+  'Underline Focus': { font:"'Inter',sans-serif", size:25, pos:'20%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'underline', outline:'shadow', anim:'fade', hl:false, weight:700, case:'normal' },
+  'Ribbon': { font:"'Montserrat',sans-serif", size:23, pos:'20%', align:'center', color:'#14110E', accent:'#F2A93B', bg:'ribbon', outline:'none', anim:'slide', hl:false, weight:800, case:'upper-wide' },
+  'Quote Bar': { font:"'Playfair Display',serif", size:27, pos:'20%', align:'left', color:'#ffffff', accent:'#F2A93B', bg:'bar', outline:'soft', anim:'fade', hl:false, weight:600, case:'italic' },
+  'Outlined Frame': { font:"'Cormorant Garamond',serif", size:28, pos:'45%', align:'center', color:'#ffffff', accent:'#F3D98B', bg:'frame', outline:'soft', anim:'fade', hl:false, weight:700, case:'upper-wide' },
+  'Long Shadow': { font:"'Montserrat',sans-serif", size:33, pos:'20%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'long', anim:'pop', hl:false, weight:800, case:'upper' },
+  'Neon Pink': { font:"'Poppins',sans-serif", size:28, pos:'45%', align:'center', color:'#ffffff', accent:'#FF3CAC', bg:'none', outline:'glow', anim:'word-slide', hl:true, weight:700, case:'normal', chunk:3 },
+  'Terminal': { font:"'Courier New',monospace", size:23, pos:'20%', align:'left', color:'#31D6A1', accent:'#31D6A1', bg:'box', outline:'none', anim:'typewriter', hl:false, weight:700, case:'normal' },
+  'Creator Yellow': { font:"Impact,'Bebas Neue',sans-serif", size:38, pos:'45%', align:'center', color:'#FFE600', accent:'#ffffff', bg:'none', outline:'outline', anim:'word-pop', hl:true, weight:400, case:'upper', chunk:2 },
+  'Glitch': { font:"'Montserrat',sans-serif", size:30, pos:'20%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'glitch', anim:'word-pop', hl:false, weight:800, case:'upper', chunk:3 },
+  'Chrome': { font:"'Montserrat',sans-serif", size:32, pos:'45%', align:'center', color:'#ffffff', accent:'#9aa4b2', bg:'none', outline:'chrome', anim:'pop', hl:false, weight:800, case:'upper-wide' },
+  'Fire': { font:"'Bebas Neue',sans-serif", size:44, pos:'45%', align:'center', color:'#FFB300', accent:'#FF2D1A', bg:'none', outline:'fire', anim:'word-pop', hl:false, weight:400, case:'upper', chunk:2 },
+  'Neon Sign': { font:"'Poppins',sans-serif", size:30, pos:'45%', align:'center', color:'#ffffff', accent:'#31E3FF', bg:'none', outline:'neonline', anim:'fade', hl:false, weight:600, case:'normal' },
+  'Neon Box': { font:"'Poppins',sans-serif", size:26, pos:'20%', align:'center', color:'#ffffff', accent:'#B26BFF', bg:'neonbox', outline:'none', anim:'word-pop', hl:false, weight:700, case:'normal', chunk:3 },
+  'Tape Label': { font:"'Poppins',sans-serif", size:26, pos:'20%', align:'center', color:'#14110E', accent:'#FFD84D', bg:'tape', outline:'none', anim:'pop', hl:false, weight:800, case:'upper' },
+  'Spotlight': { font:"'Playfair Display',serif", size:28, pos:'8%', align:'center', color:'#ffffff', accent:'#F3D98B', bg:'vignette', outline:'soft', anim:'fade', hl:false, weight:600, case:'italic' },
+  'Cinema Gold': { font:"'Cormorant Garamond',serif", size:30, pos:'8%', align:'center', color:'#F3D98B', accent:'#F3D98B', bg:'vignette', outline:'soft', anim:'fade', hl:false, weight:700, case:'upper-wide' },
+  'Badge': { font:"'Poppins',sans-serif", size:30, pos:'20%', align:'center', color:'#ffffff', accent:'#FF4D6D', bg:'none', outline:'badge', anim:'word-pop', hl:false, weight:800, case:'upper', chunk:3 },
+  'Comic Pop': { font:"Impact,'Bebas Neue',sans-serif", size:38, pos:'45%', align:'center', color:'#FFE600', accent:'#14110E', bg:'none', outline:'badge', anim:'word-pop', hl:false, weight:400, case:'upper', chunk:2 },
+  'Mint Marker': { font:"'Inter',sans-serif", size:25, pos:'20%', align:'center', color:'#0B2A20', accent:'#7CFFCB', bg:'marker', outline:'none', anim:'word-slide', hl:false, weight:800, case:'normal', chunk:3 },
+  'Mono Minimal': { font:"'Inter',sans-serif", size:20, pos:'8%', align:'left', color:'#ffffff', accent:'#ffffff', bg:'none', outline:'soft', anim:'fade', hl:false, weight:500, case:'wide' },
   'Tall Caps': { font:"'Bebas Neue',sans-serif", size:40, pos:'45%', align:'center', color:'#ffffff', accent:'#31D6A1', bg:'none', outline:'outline', anim:'pop', hl:true, weight:400, case:'upper-wide' }
 };
 
@@ -819,7 +877,7 @@ async function startRealPipeline(blobUrl, originalFilename){
 
   let request = fetch('/api/transcribe', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ blobUrl, durationSeconds: state.video.duration, originalFilename })
+    body: JSON.stringify({ blobUrl, durationSeconds: state.video.duration, originalFilename, outputLanguage: (document.getElementById('videoLang')||{}).value === 'english' ? 'english' : 'roman' })
   }).then(async r => {
     const data = await r.json().catch(()=>({}));
     if(!r.ok) throw new Error(data.error || 'Transcription failed.');
@@ -1081,10 +1139,27 @@ function presetSwatch(p){
   else if(p.bg==='glass') st += 'background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);padding:3px 11px;border-radius:10px;';
   else if(p.bg==='marker') st += `background:${acc};padding:1px 8px;border-radius:3px;`;
   else if(p.bg==='gradient') st += 'background:linear-gradient(transparent,rgba(0,0,0,.7));padding:3px 9px;';
+  else if(p.bg==='underline') st += `border-bottom:3px solid ${acc};padding:0 4px;`;
+  else if(p.bg==='ribbon') st += `background:${acc};padding:3px 16px;`;
+  else if(p.bg==='bar') st += `border-left:3px solid ${acc};padding:0 9px;`;
+  else if(p.bg==='neonbox') st += `background:rgba(10,6,24,.75);border:1.5px solid ${acc};box-shadow:0 0 8px ${acc};padding:3px 10px;border-radius:7px;`;
+  else if(p.bg==='tape') st += `background:${acc};padding:2px 12px;transform:rotate(-2deg);display:inline-block;`;
+  else if(p.bg==='vignette') st += 'background:radial-gradient(rgba(0,0,0,.75),transparent 75%);padding:4px 14px;';
+  else if(p.bg==='frame') st += `border:1.5px solid ${acc};padding:3px 10px;border-radius:5px;background:rgba(0,0,0,.35);`;
   if(p.outline==='glow') st += `text-shadow:0 0 6px ${acc},0 0 14px ${acc};`;
   else if(p.outline==='shadow') st += 'text-shadow:0 2px 5px rgba(0,0,0,.9);';
   else if(p.outline==='soft') st += 'text-shadow:0 1px 3px rgba(0,0,0,.7);';
   else if(p.outline==='outline') st += '-webkit-text-stroke:1px #000;';
+  else if(p.outline==='hollow') st += `-webkit-text-stroke:1px ${p.color};color:transparent;`;
+  else if(p.outline==='retro') st += `text-shadow:1px 1px 0 ${acc},2px 2px 0 ${acc},3px 3px 0 ${acc};`;
+  else if(p.outline==='long') st += 'text-shadow:1px 1px 0 rgba(0,0,0,.6),2px 2px 0 rgba(0,0,0,.6),3px 3px 0 rgba(0,0,0,.6),4px 4px 0 rgba(0,0,0,.6);';
+  else if(p.outline==='sticker') st += '-webkit-text-stroke:3px #fff;paint-order:stroke fill;';
+  else if(p.outline==='glitch') st += 'text-shadow:-2px 0 rgba(0,255,255,.9),2px 0 rgba(255,0,110,.9);';
+  else if(p.outline==='chrome') st += 'background:linear-gradient(#fff,#b9c3d1 45%,#59647a 52%,#d9e1ec 75%,#fff);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:.6px #0a0f1c;';
+  else if(p.outline==='fire') st += 'background:linear-gradient(#FFF3A0,#FFB300 45%,#FF2D1A);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 4px rgba(255,90,0,.8));';
+  else if(p.outline==='neonline') st += `-webkit-text-stroke:1px ${acc};text-shadow:0 0 8px ${acc},0 0 16px ${acc};`;
+  else if(p.outline==='badge') st += `-webkit-text-stroke:3px ${acc};paint-order:stroke fill;`;
+  else if(p.outline==='gradient') st += `background:linear-gradient(${p.color},${acc});-webkit-background-clip:text;background-clip:text;color:transparent;`;
   return `<div class="swatch sw-sample"><span style="${st}">Lafzaly</span></div>`;
 }
 function buildPresetRow(){
@@ -1364,6 +1439,7 @@ async function exportVideo(){
 function init(){
   initPreviewCanvas();
   renderExamples(); showEmptyBoard(); updateTopicCount(); updateGenNote();
+  buildChipGroup('languageChips','language');
   buildChipGroup('platformChips','platform');
   buildChipGroup('typeChips','type');
   buildChipGroup('toneChips','tone');

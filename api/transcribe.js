@@ -54,7 +54,8 @@ async function handler(req, res) {
   const user = await getSessionUser(req);
   if (!user) return res.status(401).json({ error: 'Please log in to generate video captions.' });
 
-  const { blobUrl, durationSeconds, originalFilename, language } = req.body || {};
+  const { blobUrl, durationSeconds, originalFilename, language, outputLanguage } = req.body || {};
+  const toEnglish = outputLanguage === 'english';
   if (!blobUrl) return res.status(400).json({ error: 'blobUrl is required' });
   // Only accept files from our own Vercel Blob storage (prevents fetching/deleting arbitrary URLs).
   let host = '';
@@ -153,7 +154,7 @@ async function handler(req, res) {
     const wordsOf = d => (d.words && d.words.length) ? d.words : flattenSegmentsToWords(d.segments || []);
     // Urdu/Hindi speech is often auto-detected as Hindi and written in Devanagari, so default to Urdu.
     // If that finds suspiciously little speech, retry with the larger Whisper model (Urdu, Hindi, auto) and keep the fullest result.
-    const whisperLang = language === 'auto' ? null : (language || 'ur');
+    const whisperLang = (language === 'auto' || toEnglish) ? null : (language || 'ur');
 
     let whisperData;
     try {
@@ -195,7 +196,7 @@ async function handler(req, res) {
     }
 
     const chunks = chunkWordsIntoCaptions(words);
-    const romanTexts = await toRomanUrduBatch(chunks.map(c => c.text));
+    const romanTexts = await toRomanUrduBatch(chunks.map(c => c.text), toEnglish);
 
     const segments = chunks.map((c, i) => {
       const text = (romanTexts[i] || c.text).trim();
@@ -305,8 +306,18 @@ function classifyLang(text) {
 // only falls back to the original text as a last resort.
 const NON_LATIN = /[؀-ۿऀ-ॿ਀-੿]/;
 
-async function callRoman(lines) {
-  const prompt = `You convert speech-transcript lines into natural, conversational Pakistani Roman Urdu: Urdu written ONLY in English/Latin letters, the way Pakistani creators text (e.g. "Aap sab kaise hain? Aaj hum baat karenge..."). The input lines may be in Urdu script, Hindi/Devanagari script, Punjabi, or English. Rules:
+const ENGLISH_PROMPT = (lines) => `You turn speech-transcript lines into clean, natural English subtitles. The input lines are consecutive speech from ONE video and may be in Urdu, Hindi, Roman Urdu, English or a mix; the speech recognizer sometimes mishears words, so use the surrounding lines as context to repair garbled words.
+- If a line is not English, translate its meaning faithfully into natural spoken English (not word-for-word). If it is already English, keep it and only fix spelling and punctuation.
+- Add proper punctuation and a capital first letter; end each line with a full stop, question mark or exclamation mark where it fits.
+- Keep each line short enough to read as a subtitle. Do not merge or split lines, do not add information that was not said.
+- Output must use only Latin letters, digits and punctuation.
+Reply with JSON only: {"lines": ["...", "..."]} containing exactly ${lines.length} strings in the same order as the input.
+
+Input:
+${JSON.stringify(lines)}`;
+
+async function callRoman(lines, english) {
+  const prompt = english ? ENGLISH_PROMPT(lines) : `You convert speech-transcript lines into natural, conversational Pakistani Roman Urdu: Urdu written ONLY in English/Latin letters, the way Pakistani creators text (e.g. "Aap sab kaise hain? Aaj hum baat karenge..."). The input lines may be in Urdu script, Hindi/Devanagari script, Punjabi, or English. Rules:
 - This is a TRANSCRIPT, so be faithful and correct: transliterate exactly what was said, word for word, into standard Roman Urdu spelling used in Pakistani media and messaging: hai, hain, nahi, kya, kaise, aap, hum, main, mein, ko, ka, ki, ke, aaj, kal, bohat, acha, theek, karna, kiya, hoga, lekin, aur, kyun, yeh, woh, toh, bhi, sath, abhi, phir. Spell each word the same way every time. Do NOT use SMS shorthand (no "krna", "nhi", "hm", "bht", "ap").
 - The lines are consecutive speech from ONE video. The speech recognizer often mishears Urdu, so use the surrounding lines as context to repair words that are clearly garbled into the most likely real Urdu words (e.g. "hum iar pish toh bohat hai lekin skon nam" -> "Hamare paas paisa toh bohat hai, lekin sukoon nahi."). Only repair when the intended phrase is clear; otherwise keep what was heard. Never add ideas that were not spoken.
 - Add proper punctuation: commas at natural pauses, a full stop, question mark or exclamation mark at the end of each line, and a capital first letter.
@@ -352,7 +363,7 @@ function ruleBasedRoman(text) {
 
 const isGood = t => t && !NON_LATIN.test(t);
 
-async function toRomanUrduBatch(texts) {
+async function toRomanUrduBatch(texts, english) {
   if (!texts.length) return texts;
   const out = texts.slice();
   const BATCH = 25;
@@ -360,12 +371,12 @@ async function toRomanUrduBatch(texts) {
     for (let b = 0; b < texts.length; b += BATCH) {
       const slice = texts.slice(b, b + BATCH);
       let got = [];
-      try { got = await callRoman(slice); } catch (e) { console.warn('roman batch failed:', e.message); await new Promise(r => setTimeout(r, 800)); try { got = await callRoman(slice); } catch (e2) { console.warn('roman batch retry failed:', e2.message); } }
+      try { got = await callRoman(slice, english); } catch (e) { console.warn('roman batch failed:', e.message); await new Promise(r => setTimeout(r, 800)); try { got = await callRoman(slice, english); } catch (e2) { console.warn('roman batch retry failed:', e2.message); } }
       for (let k = 0; k < slice.length; k++) {
         let t = got.length === slice.length ? got[k] : '';
         if (!isGood(t)) {            // retry this single line once
           for (let a = 0; a < 2 && !isGood(t); a++) {
-            try { t = (await callRoman([slice[k]]))[0] || ''; } catch (e) { t = ''; await new Promise(r => setTimeout(r, 600)); }
+            try { t = (await callRoman([slice[k]], english))[0] || ''; } catch (e) { t = ''; await new Promise(r => setTimeout(r, 600)); }
           }
         }
         if (!isGood(t)) t = ruleBasedRoman(slice[k]);
