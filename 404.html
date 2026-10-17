@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found — Lafzaly</title><meta name="robots" content="noindex">
+<link rel="stylesheet" href="/site.css">
+<script>
+// Safety net: if a deep link into the app ever reaches this page (e.g. a host without rewrites),
+// hand it to the app, which opens the right section.
+(function(){
+  var m = location.pathname.match(/^\/app\/([^\/]+)/);
+  if (m) location.replace('/app?view=' + encodeURIComponent(m[1]));
+})();
+</script></head>
+<body style="background:#0C0E0A;color:#F3F1E6;font-family:Inter,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;text-align:center;padding:24px">
+<div><h1 style="font-size:28px;margin:0 0 10px">This page doesn’t exist</h1>
+<p style="color:#A6A08C;margin:0 0 22px">It may have moved. Head back to Lafzaly and pick up from there.</p>
+<a href="/" style="background:#0F5C46;color:#fff;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:600">Go to home</a>
+<a href="/app" style="margin-left:10px;color:#31D6A1;text-decoration:none;font-weight:600">Open the app</a></div></body></html>

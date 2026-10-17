@@ -1,7 +1,12 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/app/:view", "destination": "/app.html" }
+    { "source": "/app/video", "destination": "/app.html" },
+    { "source": "/app/history", "destination": "/app.html" },
+    { "source": "/app/saved", "destination": "/app.html" },
+    { "source": "/app/account", "destination": "/app.html" },
+    { "source": "/app/admin", "destination": "/app.html" },
+    { "source": "/app/:path*", "destination": "/app.html" }
   ],
   "functions": {
     "api/transcribe.js": { "maxDuration": 60 },

@@ -57,6 +57,13 @@ const PATH_VIEWS = { '':'generate', 'generate':'generate', 'video':'video', 'his
 const NEEDS_LOGIN = ['video','history','saved','settings','admin'];
 const VIEW_TITLES = {generate:'Generate captions', video:'Video captions', history:'Caption history', saved:'Saved captions', settings:'Account', admin:'Admin'};
 function viewFromPath(){
+  // ?view=video is used by the 404 fallback; turn it back into the clean /app/video URL
+  const qv = new URLSearchParams(location.search).get('view');
+  if(qv && PATH_VIEWS[qv.toLowerCase()]){
+    const v = PATH_VIEWS[qv.toLowerCase()];
+    try{ history.replaceState({view:v}, '', VIEW_PATHS[v]); }catch(e){}
+    return v;
+  }
   const seg = location.pathname.replace(/^\/app\/?/, '').replace(/\/+$/, '').toLowerCase();
   return PATH_VIEWS[seg] || 'generate';
 }

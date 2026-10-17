@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lafzaly — Caption studio</title>
+<meta name="description" content="Generate Roman Urdu captions and subtitles.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0C0E0A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230F5C46%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2740%27 text-anchor=%27middle%27 fill=%27%2331D6A1%27%3E%D9%84%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&family=Poppins:wght@500;600;700;800&family=Montserrat:wght@500;700;800&family=Playfair+Display:ital,wght@0,600;1,500;1,600&family=Cormorant+Garamond:wght@600;700&family=Caveat:wght@600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div id="view-app" class="active">
+  <aside class="app-sidebar" id="sidebar">
+    <a class="logo" href="/" style="text-decoration:none;color:inherit;"><span class="mark">ل</span>Lafzaly</a>
+    <a class="side-link" data-nav="generate" href="/app" onclick="event.preventDefault();showSubview('generate')"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>Generate</a>
+    <a class="side-link" data-nav="video" href="/app/video" onclick="event.preventDefault();showSubview('video')"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg></span>Video Captions</a>
+    <div class="side-section-label">Library</div>
+    <a class="side-link" data-nav="history" href="/app/history" onclick="event.preventDefault();showSubview('history')"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Caption History</a>
+    <a class="side-link" data-nav="saved" href="/app/saved" onclick="event.preventDefault();showSubview('saved')"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>Saved Captions</a>
+    <div class="side-section-label">Account</div>
+    <a class="side-link" data-nav="settings" href="/app/account" onclick="event.preventDefault();showSubview('settings')"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span>Account</a>
+    <a class="side-link hidden" data-nav="admin" id="adminSideLink" href="/app/admin" onclick="event.preventDefault();showSubview('admin')"><span class="ic"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Admin</a>
+    <div class="sidebar-foot">
+      <div class="usage-mini" id="usageMiniPanel">
+        <div class="row"><span>Text today</span><span id="miniTextUse">0/10</span></div>
+        <div class="usage-bar"><div id="miniTextBar" style="width:0%"></div></div>
+        <div class="row" id="miniVideoRow"><span id="miniVideoLabel">Video mins today</span><span id="miniVideoUse">0/3</span></div>
+        <div class="usage-bar" id="miniVideoBarWrap"><div id="miniVideoBar" style="width:0%"></div></div>
+      </div>
+      <a class="back-to-site" href="/"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg> Back to home</a>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <div class="app-topbar">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button class="nav-toggle" style="display:flex;" onclick="document.getElementById('sidebar').classList.toggle('open')"><span></span><span></span><span></span></button>
+        <div class="topbar-title" id="topbarTitle">Generate</div>
+      </div>
+      <div class="topbar-right">
+        <div class="usage-pill"><svg class="i flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.3 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> <b id="usagePillText">10</b><span class="full-label">&nbsp;text credits left today</span></div>
+        <button class="profile-btn" onclick="toggleProfileMenu()" id="profileBtn">G</button>
+      </div>
+    </div>
+    <div class="profile-menu" id="profileMenu">
+      <div class="pm-name" id="profileName">Guest</div>
+      <a href="/app/account" id="menuAccountItem" class="hidden" onclick="event.preventDefault();showSubview('settings');toggleProfileMenu();"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg> Account</a>
+      <a href="/login?next=/app" id="menuLoginItem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg> Log in</a>
+      <a href="/signup" id="menuSignupItem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg> Create account</a>
+      <button onclick="logoutUser();toggleProfileMenu();" id="menuLogoutItem" class="hidden"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg> Log out</button>
+    </div>
+
+    <div class="app-content">
+
+      <!-- ===== GENERATE ===== -->
+      <div class="app-subview" id="subview-generate">
+        <div class="gen-shell">
+          <section class="gen-composer panel" aria-labelledby="genTitle">
+            <div class="gen-head">
+              <h2 id="genTitle">Write Roman Urdu captions</h2>
+              <p>Describe your post once. Lafzaly writes the hook, caption, call to action and hashtags for your platform.</p>
+            </div>
+            <div class="gen-scroll">
+              <div class="field-block">
+                <label class="field-label" for="topicInput">What is your post about?</label>
+                <textarea class="input-dark" id="topicInput" rows="4" maxlength="300" placeholder="e.g. Real estate project on Canal Road Faisalabad, launching soon with easy installments" oninput="updateTopicCount()" onkeydown="topicKey(event)"></textarea>
+                <div class="field-row"><div class="field-hint">Be specific. Lafzaly only writes about what you tell it.</div><span class="field-count" id="topicCount">0/300</span></div>
+                <div class="example-row" id="exampleRow" aria-label="Example posts"></div>
+              </div>
+              <div class="field-block">
+                <span class="field-label" id="lblPlatform">Platform</span>
+                <div class="chip-group scroll-x" id="platformChips" role="radiogroup" aria-labelledby="lblPlatform"></div>
+              </div>
+              <div class="field-block">
+                <span class="field-label" id="lblType">Content type</span>
+                <div class="chip-group scroll-x" id="typeChips" role="radiogroup" aria-labelledby="lblType"></div>
+              </div>
+              <div class="field-block">
+                <span class="field-label" id="lblTone">Tone</span>
+                <div class="chip-group scroll-x" id="toneChips" role="radiogroup" aria-labelledby="lblTone"></div>
+              </div>
+              <div class="field-pair">
+                <div class="field-block">
+                  <span class="field-label" id="lblLength">Length</span>
+                  <div class="chip-group seg" id="lengthChips" role="radiogroup" aria-labelledby="lblLength"></div>
+                </div>
+                <div class="field-block">
+                  <span class="field-label" id="lblCount">How many</span>
+                  <div class="chip-group seg" id="countChips" role="radiogroup" aria-labelledby="lblCount"></div>
+                </div>
+              </div>
+            </div>
+            <div class="gen-foot">
+              <button class="btn btn-primary btn-block" id="genBtn" onclick="generateCaptions()">Generate captions</button>
+              <div class="gen-foot-note"><span id="genUsageNote"></span><span class="kbd-hint">Ctrl + Enter</span></div>
+            </div>
+          </section>
+
+          <section class="gen-results" id="resultsPanel" aria-labelledby="resultsTitle" aria-live="polite">
+            <header class="results-head">
+              <div>
+                <h3 id="resultsTitle">Your captions</h3>
+                <p id="resultsSub">Nothing yet. Fill in the post details and generate.</p>
+              </div>
+              <div class="results-actions hidden" id="resultsActions">
+                <button class="icon-btn" onclick="copyAllCards()"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy all</button>
+                <button class="icon-btn" onclick="clearResults()"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Clear</button>
+              </div>
+            </header>
+            <div class="results-wrap" id="resultsWrap"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== VIDEO ===== -->
+      <div class="app-subview" id="subview-video">
+        <div class="content-head"><h2>Caption my video</h2><p>Upload a video or audio voiceover — Lafzaly transcribes it and writes natural Roman Urdu subtitles, synced to your voice.</p></div>
+
+        <div class="panel" id="uploadPanel">
+          <label class="dropzone" id="dropzone" for="fileInput" style="display:block;">
+            <div class="ic"><svg class="i lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg></div>
+            <h4>Drag &amp; drop your video or audio here</h4>
+            <p>or click to browse — MP4, MOV, WebM, MP3, WAV</p>
+            <p style="margin-top:4px;font-weight:600;">Maximum video length: 4 minutes</p>
+            <input type="file" id="fileInput" accept=".mp4,.mov,.webm,.mp3,.wav,video/*,audio/*">
+            <div class="file-types-row"><span>MP4</span><span>MOV</span><span>WebM</span><span>MP3</span><span>WAV</span></div>
+          </label>
+          <div id="uploadProgressWrap" class="hidden" style="margin-top:18px;">
+            <div class="usage-bar" style="height:8px;"><div id="uploadProgressBar" style="width:0%"></div></div>
+            <div class="field-hint" id="uploadProgressLabel">Uploading…</div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="pipelinePanel" style="margin-top:20px;">
+          <div class="content-head" style="margin-bottom:18px;"><h2 style="font-size:17px;">Processing your voiceover</h2><p>This runs automatically — audio extraction, transcription, language detection and Roman Urdu conversion.</p></div>
+          <div class="pipeline" id="pipelineSteps"></div>
+        </div>
+
+        <div class="hidden" id="videoWorkspace">
+          <div class="video-workspace">
+            <div class="vw-preview">
+              <div class="panel" style="padding:16px;">
+                <div class="preview-frame" id="previewFrame">
+                  <video id="previewVideo" playsinline></video>
+                  <canvas id="previewCanvas" onclick="togglePlay()" title="Click to play / pause"></canvas>
+                </div>
+                <div class="preview-controls">
+                  <button onclick="togglePlay()" id="playBtn" aria-label="Play"><svg class="i fill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg></button>
+                  <div class="scrub" id="scrub" onclick="scrubSeek(event)"><div id="scrubFill"></div></div>
+                  <span class="time-label" id="timeLabel">0:00 / 0:00</span>
+                </div>
+              </div>
+              <div class="panel" style="margin-top:16px;">
+                <label class="field-label" style="margin-bottom:12px;">Export</label>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <button class="btn btn-marigold btn-sm" id="exportBtn" onclick="exportVideo()"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Export captioned video</button>
+                  <button class="btn btn-ghost btn-sm" onclick="downloadSubs('srt')"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Download SRT</button>
+                  <button class="btn btn-ghost btn-sm" onclick="downloadSubs('vtt')"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg> Download VTT</button>
+                  <button class="btn btn-ghost btn-sm" onclick="copyTranscript()"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Transcript</button>
+                </div>
+                <div class="export-progress hidden" id="exportProgress"><div class="bar"><div id="exportBar"></div></div><div class="lbl" id="exportLabel"></div></div>
+                <p class="export-note">The video is rendered in your browser at normal playback speed, so a 1-minute video takes about 1 minute. Keep this tab open while it exports.</p>
+              </div>
+            </div>
+
+            <div>
+              <div class="tabs-row">
+                <button class="tab-btn active" data-tab="transcript" onclick="switchTab('transcript')">Transcript</button>
+                <button class="tab-btn" data-tab="style" onclick="switchTab('style')">Caption Styling</button>
+              </div>
+
+              <div class="tab-panel active" id="tab-transcript">
+                <div class="panel">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <div>
+                      <div class="field-label" style="margin-bottom:2px;">Detected language: <span id="detectedLangTag" class="pill-sm">Mixed Urdu + English</span></div>
+                      <div class="field-hint">Click a line to jump to it in the preview. Edit text directly, or adjust the start/end seconds.</div>
+                    </div>
+                  </div>
+                  <div class="transcript-list" id="transcriptList"></div>
+                </div>
+              </div>
+
+              <div class="tab-panel" id="tab-style">
+                <div class="panel">
+                  <label class="field-label">Style presets</label>
+                  <div class="preset-row" id="presetRow"></div>
+                  <div class="style-row">
+                    <div class="field-block">
+                      <label class="field-label">Font</label>
+                      <select class="input-dark" id="styleFont" onchange="applyStyle()">
+                        <option value="'Sora',sans-serif">Sora</option>
+                        <option value="'Inter',sans-serif">Inter</option>
+                        <option value="Impact,sans-serif">Impact</option>
+                        <option value="Georgia,serif">Georgia</option>
+                        <option value="'Poppins',sans-serif">Poppins</option>
+                        <option value="'Montserrat',sans-serif">Montserrat</option>
+                        <option value="'Playfair Display',serif">Playfair Display (elegant serif)</option>
+                        <option value="'Cormorant Garamond',serif">Cormorant Garamond (luxe)</option>
+                        <option value="'Caveat',cursive">Caveat (handwritten)</option>
+                        <option value="'Bebas Neue',sans-serif">Bebas Neue (tall caps)</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Font size (<span id="fontSizeVal">28</span>px)</label>
+                      <input type="range" class="input-dark" id="styleFontSize" min="16" max="46" value="28" oninput="applyStyle()">
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Caption position</label>
+                      <input type="hidden" id="stylePosition" value="8%">
+                      <input type="hidden" id="styleAlign" value="center">
+                      <div class="pos-grid" id="posGrid" role="radiogroup" aria-label="Caption position">
+                        <button type="button" role="radio" data-v="80%" data-h="left" aria-label="Top left" onclick="setCapPos('80%','left')"><i></i></button>
+                        <button type="button" role="radio" data-v="80%" data-h="center" aria-label="Top center" onclick="setCapPos('80%','center')"><i></i></button>
+                        <button type="button" role="radio" data-v="80%" data-h="right" aria-label="Top right" onclick="setCapPos('80%','right')"><i></i></button>
+                        <button type="button" role="radio" data-v="45%" data-h="left" aria-label="Middle left" onclick="setCapPos('45%','left')"><i></i></button>
+                        <button type="button" role="radio" data-v="45%" data-h="center" aria-label="Middle center" onclick="setCapPos('45%','center')"><i></i></button>
+                        <button type="button" role="radio" data-v="45%" data-h="right" aria-label="Middle right" onclick="setCapPos('45%','right')"><i></i></button>
+                        <button type="button" role="radio" data-v="8%" data-h="left" aria-label="Bottom left" onclick="setCapPos('8%','left')"><i></i></button>
+                        <button type="button" role="radio" data-v="8%" data-h="center" aria-label="Bottom center" onclick="setCapPos('8%','center')"><i></i></button>
+                        <button type="button" role="radio" data-v="8%" data-h="right" aria-label="Bottom right" onclick="setCapPos('8%','right')"><i></i></button>
+                      </div>
+                      <div class="pos-hint" id="posHint">Bottom center</div>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Text color</label>
+                      <div class="color-swatch-row"><input type="color" id="styleColor" value="#ffffff" oninput="applyStyle()"></div>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Accent color <span style="font-weight:400;color:var(--dark-text-dim);">(highlight, pill, glow)</span></label>
+                      <div class="color-swatch-row"><input type="color" id="styleAccent" value="#F2A93B" oninput="applyStyle()"></div>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Weight</label>
+                      <select class="input-dark" id="styleWeight" onchange="applyStyle()">
+                        <option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option><option value="700">Bold</option><option value="800" selected>Extra bold</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Text case &amp; spacing</label>
+                      <select class="input-dark" id="styleCase" onchange="applyStyle()">
+                        <option value="normal">Normal</option><option value="upper">UPPERCASE</option><option value="upper-wide">UPPERCASE · wide spacing</option><option value="italic">Italic</option><option value="wide">Normal · wide spacing</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Background</label>
+                      <select class="input-dark" id="styleBg" onchange="applyStyle()">
+                        <option value="none">None</option>
+                        <option value="box" selected>Box</option>
+                        <option value="gradient">Gradient fade</option>
+                        <option value="pill">Solid pill (accent)</option>
+                        <option value="glass">Frosted glass</option>
+                        <option value="marker">Highlighter marker (accent)</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Outline / Shadow</label>
+                      <select class="input-dark" id="styleOutline" onchange="applyStyle()">
+                        <option value="shadow">Drop shadow</option>
+                        <option value="outline">Hard outline</option>
+                        <option value="soft">Soft subtle shadow</option>
+                        <option value="glow">Neon glow (accent)</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Animation</label>
+                      <select class="input-dark" id="styleAnim" onchange="applyStyle()">
+                        <optgroup label="Per word (animated)">
+                          <option value="word-pop">Word pop — words appear as spoken</option>
+                          <option value="word-slide">Word slide-up</option>
+                          <option value="typewriter">Typewriter</option>
+                          <option value="bounce">Bounce on spoken word</option>
+                        </optgroup>
+                        <optgroup label="Whole line">
+                          <option value="pop">Pop</option>
+                          <option value="fade">Fade</option>
+                          <option value="slide">Slide up</option>
+                          <option value="none">None</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div class="field-block">
+                      <label class="field-label">Words on screen</label>
+                      <select class="input-dark" id="styleChunk" onchange="applyStyle()">
+                        <option value="0">Full line</option>
+                        <option value="1">1 word at a time</option>
+                        <option value="2">2 words</option>
+                        <option value="3">3 words</option>
+                        <option value="4">4 words</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field-block" style="margin-top:4px;">
+                    <label class="field-label" style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="styleHighlight" checked onchange="applyStyle()" style="width:auto;"> Word-by-word highlight (accent color follows the voice)</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== HISTORY ===== -->
+      <div class="app-subview" id="subview-history">
+        <div class="content-head"><h2>Caption history</h2><p>Everything you've generated, in one place.</p></div>
+        <div class="panel">
+          <div style="display:flex;gap:10px;margin-bottom:18px;">
+            <input class="input-dark" id="historySearch" placeholder="Search by topic, platform or caption text…" oninput="renderHistory()">
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Topic</th><th>Platform</th><th>Tone</th><th>Caption</th><th>Saved</th><th></th></tr></thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+          <div id="historyEmpty" class="empty-state hidden"><div class="ic"><svg class="i lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>No history yet</h4><p>Generate your first caption and it'll show up here automatically.</p></div>
+        </div>
+      </div>
+
+      <!-- ===== SAVED ===== -->
+      <div class="app-subview" id="subview-saved">
+        <div class="content-head"><h2>Saved captions</h2><p>Your starred captions, ready whenever you need them.</p></div>
+        <div class="saved-grid" id="savedGrid"></div>
+        <div id="savedEmpty" class="empty-state hidden"><div class="ic"><svg class="i lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h4>Nothing saved yet</h4><p>Tap the save icon on any generated caption to keep it here.</p></div>
+      </div>
+
+      <!-- ===== SETTINGS ===== -->
+      <div class="app-subview" id="subview-settings">
+        <div class="content-head"><h2>Account</h2><p>Your account, usage limits and integration status.</p></div>
+        <div class="settings-grid">
+          <div class="panel settings-block">
+            <label class="field-label">Profile</label>
+            <div class="field-block"><label class="field-label">Name</label><input class="input-dark" id="settingsName" value="" placeholder="Your name"></div>
+            <div class="field-block"><label class="field-label">Email</label><input class="input-dark" id="settingsEmail" placeholder="you@example.com" value=""></div>
+            <button class="btn btn-primary btn-sm" onclick="showToast('Profile saved','success')">Save changes</button>
+          </div>
+          <div class="panel settings-block">
+            <label class="field-label">Appearance</label>
+            <div class="field-hint" style="margin-bottom:14px;">Lafzaly's dashboard is optimized for a dark, focused workspace.</div>
+            <div class="chip-group">
+              <div class="chip-opt selected" id="themeDarkChip" onclick="setTheme('dark')">Dark</div>
+              <div class="chip-opt" id="themeLightChip" onclick="setTheme('light')">Light</div>
+            </div>
+          </div>
+          <div class="panel settings-block">
+            <label class="field-label">Plan &amp; usage</label>
+            <div class="field-block">
+              <div class="row" style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px;"><span>Text captions today</span><span id="settingsTextUse">0 / 10</span></div>
+              <div class="usage-bar"><div id="settingsTextBar" style="width:0%"></div></div>
+            </div>
+            <div class="field-block">
+              <div class="row" style="display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px;" id="settingsVideoRow"><span id="settingsVideoLabel">Video minutes today</span><span id="settingsVideoUse">0 / 3</span></div>
+              <div class="usage-bar"><div id="settingsVideoBar" style="width:0%"></div></div>
+            </div>
+            <div class="field-hint" id="settingsPlanHint">Free plan resets daily (UTC). Video captioning requires an account.</div>
+          </div>
+          <div class="panel settings-block" id="proUpgradeCard">
+            <label class="field-label">Lafzaly Pro</label>
+            <div style="font-family:var(--font-display);font-weight:800;font-size:30px;margin:8px 0 2px;">$1<span style="font-size:14px;font-weight:500;color:var(--dark-text-dim);"> / month</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--dark-text-dim);margin:14px 0 18px;">
+              <div class="tick"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> 3 full videos/day, up to 4 minutes each</div>
+              <div class="tick"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Roman Urdu + Urdu + English mixed speech</div>
+              <div class="tick"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Synchronized captions, styling presets</div>
+              <div class="tick"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> SRT/VTT download</div>
+            </div>
+            <button class="btn btn-marigold btn-block" id="proUpgradeBtn" onclick="startProCheckout()">Get Pro — $1/month</button>
+            <div class="field-hint" id="proStatusHint" style="margin-top:10px;"></div>
+          </div>
+          <div class="panel settings-block">
+            <label class="field-label">Server integration status</label>
+            <div class="field-hint" style="margin-bottom:14px;">Configured via environment variables on the server — never exposed to the browser.</div>
+            <div class="env-key-row"><code>GROQ_API_KEY</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>BLOB_READ_WRITE_TOKEN</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>DATABASE_URL</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>JWT_SECRET</code><span class="status">See README</span></div>
+            <div class="env-key-row"><code>STRIPE_SECRET_KEY / STRIPE_PRICE_ID / STRIPE_WEBHOOK_SECRET</code><span class="status">See README</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN ===== -->
+      <div class="app-subview" id="subview-admin">
+        <div class="content-head"><h2>Admin</h2><p>Users, usage, and generation jobs — visible only to admin accounts (checked server-side).</p></div>
+        <div class="panel" style="margin-bottom:20px;">
+          <label class="field-label">Users</label>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Plan</th><th>Videos today</th><th>Minutes today</th><th>Joined</th></tr></thead>
+              <tbody id="adminUsersBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <label class="field-label">Recent generation jobs <span class="pill-sm" id="adminFailedPill"></span></label>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>File</th><th>Duration</th><th>Status</th><th>Error</th><th>Created</th></tr></thead>
+              <tbody id="adminJobsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+<script src="/caption-engine.js"></script>
+<script src="/app.js" defer></script>
+</body>
+</html>

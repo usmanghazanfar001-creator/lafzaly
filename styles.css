@@ -411,7 +411,7 @@ table.data-table tr:hover td{background:var(--dark-surface-2);}
   .split-block{grid-template-columns:1fr;}
   .features-grid{grid-template-columns:1fr 1fr;}
   .price-wrap{grid-template-columns:1fr;}
-  .video-workspace{grid-template-columns:1fr;}
+  .video-workspace{grid-template-columns:minmax(0,1fr);}
   .vw-preview{position:static;}
   .settings-grid{grid-template-columns:1fr;}
 }
@@ -499,3 +499,6 @@ svg.i.flame{color:var(--marigold); fill:rgba(242,169,59,.25);}
 .tick svg{color:var(--lime); width:15px; height:15px;}
 .seg-del{display:inline-flex; align-items:center; justify-content:center;}
 .seg-del svg,.history-table button svg{width:16px; height:16px;}
+.video-workspace > *{min-width:0;}
+.preview-frame{width:min(100%, 360px);}
+.preview-controls{flex-wrap:wrap; min-width:0;}
