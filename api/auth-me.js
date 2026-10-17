@@ -4,11 +4,15 @@
 // applies to the user's actual plan.
 const { getSessionUser, hasProAccess } = require('./_auth');
 const { getDb } = require('./_db');
+const { usageKey, limitFor, getTextUsed } = require('./_usage');
 
 module.exports = async (req, res) => {
   try {
     const user = await getSessionUser(req);
-    if (!user) return res.status(200).json({ user: null });
+    if (!user) {
+      let textToday = 0; try { textToday = await getTextUsed(usageKey(req, null)); } catch {}
+      return res.status(200).json({ user: null, textToday, textDailyLimit: limitFor(null) });
+    }
 
     const db = getDb();
     const today = new Date().toISOString().slice(0, 10); // UTC calendar day — see README for why
@@ -23,6 +27,7 @@ module.exports = async (req, res) => {
     const row = result.rows[0];
     const isPro = hasProAccess(user);
 
+    let textToday = 0; try { textToday = await getTextUsed(usageKey(req, user)); } catch {}
     return res.status(200).json({
       user: {
         id: user.id,
@@ -33,7 +38,9 @@ module.exports = async (req, res) => {
         isPro,
         videosToday: Number(row.videoCount),
         videoDailyLimit: user.role === 'admin' ? null : (isPro ? 3 : 0),
-        minutesToday: Number(row.totalSeconds) / 60
+        minutesToday: Number(row.totalSeconds) / 60,
+        textToday,
+        textDailyLimit: limitFor(user)
       }
     });
   } catch (err) {

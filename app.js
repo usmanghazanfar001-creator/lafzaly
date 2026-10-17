@@ -196,12 +196,13 @@ function updateUsageDisplays(){
   // handled entirely by updatePlanBadges() (see AUTH section), since it
   // depends on the logged-in user's real plan, not a local counter.
   const u = state.usage;
-  const textPct = Math.min(100, (u.textUsed/u.textMax)*100);
-  document.getElementById('miniTextUse').textContent = `${u.textUsed}/${u.textMax}`;
+  const unl = u.textMax === Infinity;
+  const textPct = unl ? 0 : Math.min(100, (u.textUsed/u.textMax)*100);
+  document.getElementById('miniTextUse').textContent = unl ? `${u.textUsed} (unlimited)` : `${u.textUsed}/${u.textMax}`;
   document.getElementById('miniTextBar').style.width = textPct+'%';
   document.getElementById('miniTextBar').parentElement.classList.toggle('warn', textPct>70);
-  document.getElementById('usagePillText').textContent = Math.max(0, u.textMax-u.textUsed);
-  const st = document.getElementById('settingsTextUse'); if(st) st.textContent = `${u.textUsed} / ${u.textMax}`;
+  document.getElementById('usagePillText').textContent = unl ? '∞' : Math.max(0, u.textMax-u.textUsed);
+  const st = document.getElementById('settingsTextUse'); if(st) st.textContent = unl ? `${u.textUsed} (unlimited)` : `${u.textUsed} / ${u.textMax}`;
   const sb = document.getElementById('settingsTextBar'); if(sb) sb.style.width = textPct+'%';
 }
 
@@ -345,7 +346,7 @@ function topicKey(e){ if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDe
 function updateGenNote(){
   const n = document.getElementById('genUsageNote'); if(!n) return;
   const left = Math.max(0, state.usage.textMax - state.usage.textUsed);
-  n.textContent = left + ' of ' + state.usage.textMax + ' free captions left today';
+  n.textContent = textLeftLabel();
 }
 function emptyBoardHTML(){
   return `<div class="empty-board"><div class="ghost" aria-hidden="true"><i class="h"></i><i class="m"></i><i class="m"></i><i class="s"></i></div>
@@ -391,10 +392,19 @@ function generateCaptions(){
   }
   const snap = { platform:selection.platform, tone:selection.tone, type:selection.type, length:selection.length, language:selection.language };
   aiCaptions(topic, snap, count).then(ai => {
+    if(ai && ai.limit){   // the server says today's free limit is used up
+      wrap.innerHTML = '';
+      showEmptyBoard();
+      btn.disabled = false; btn.textContent = 'Generate captions';
+      updateUsageDisplays(); updateGenNote();
+      showToast(ai.message, 'error');
+      return;
+    }
     wrap.innerHTML = '';
     for(let i=0;i<count;i++){
-      const c = (ai && ai[i]) ? ai[i] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length, snap.language);
-      state.usage.textUsed++;
+      const fromAi = !!(ai && ai[i]);
+      const c = fromAi ? ai[i] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length, snap.language);
+      if(!fromAi) state.usage.textUsed++;   // AI results are already counted by the server
       const id = 'r'+(state.resultCounter++);
       addToHistory(topic, snap.platform, snap.tone, c);
       wrap.appendChild(renderResultCard(id, c, topic, snap));
@@ -405,7 +415,7 @@ function generateCaptions(){
     document.getElementById('resultsSub').textContent = count + ' caption' + (count>1?'s':'') + ' for ' + snap.platform + ', ' + snap.tone.toLowerCase() + ' tone';
     document.getElementById('resultsActions').classList.remove('hidden');
     updateUsageDisplays(); updateGenNote();
-    showToast(ai ? `${count} Roman Urdu caption${count>1?'s':''} ready.` : 'AI is unavailable right now — used built-in templates instead.', ai ? 'success' : 'error');
+    showToast(ai ? `${count} ${snap.language==='English'?'English':'Roman Urdu'} caption${count>1?'s':''} ready.` : 'AI is unavailable right now — used built-in templates instead.', ai ? 'success' : 'error');
   });
 }
 
@@ -476,8 +486,9 @@ async function regenerateCard(id){
   const snap = { platform:card.dataset.platform, type:card.dataset.type, tone:card.dataset.tone, length:card.dataset.length, language:card.dataset.language };
   showToast('Rewriting…', 'success');
   const ai = await aiCaptions(topic, snap, 1);
+  if(ai && ai.limit){ showToast(ai.message, 'error'); return; }
   const c = ai ? ai[0] : generateSingleCaption(topic, snap.platform, snap.type, snap.tone, snap.length, snap.language);
-  state.usage.textUsed++;
+  if(!ai) state.usage.textUsed++;
   card.querySelector('.rc-hook').textContent = c.hook;
   document.getElementById(id+'-body').textContent = c.body;
   document.getElementById(id+'-cta').textContent = c.cta;
@@ -511,8 +522,10 @@ async function aiCaptions(topic, snap, count){
   try{
     const res = await fetch('/api/captions', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'generate', topic, platform:snap.platform, type:snap.type, tone:snap.tone, length:snap.length, count, language:snap.language }) });
+    if(res.status === 429){ const d = await res.json().catch(()=>({})); if(d.usage) syncTextUsage(d.usage.used, d.usage.limit); return { limit:true, message:d.error || 'Daily free limit reached. Upgrade to Pro for unlimited captions.' }; }
     if(!res.ok) return null;
     const d = await res.json();
+    if(d.usage) syncTextUsage(d.usage.used, d.usage.limit);
     return (d.captions && d.captions.length) ? d.captions : null;
   }catch(e){ return null; }
 }
@@ -645,10 +658,24 @@ async function refreshSession(){
     const res = await fetch('/api/auth-me');
     const data = await res.json();
     state.currentUser = data.user || null;
+    syncTextUsage(data.user ? data.user.textToday : data.textToday, data.user ? data.user.textDailyLimit : data.textDailyLimit);
   } catch{
     state.currentUser = null;
   }
   applyUserToUI();
+}
+// Text-caption usage is counted on the server (per account, or per IP for guests); the browser only mirrors it.
+// limit === null means unlimited (admin / Pro).
+function syncTextUsage(used, limit){
+  if(typeof used === 'number') state.usage.textUsed = used;
+  if(limit === null) state.usage.textMax = Infinity;
+  else if(typeof limit === 'number') state.usage.textMax = limit;
+  updateUsageDisplays();
+  const n = document.getElementById('genUsageNote'); if(n) n.textContent = textLeftLabel();
+}
+function textLeftLabel(){
+  const u = state.usage;
+  return u.textMax === Infinity ? 'Unlimited captions' : Math.max(0, u.textMax - u.textUsed) + ' of ' + u.textMax + ' free captions left today';
 }
 function applyUserToUI(){
   const u = state.currentUser;

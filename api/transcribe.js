@@ -109,7 +109,7 @@ async function handler(req, res) {
       args: [jobId, user.id, originalFilename || null, declaredDuration, 'processing']
     });
   } catch (err) {
-    console.error('could not create generation record:', err); // non-fatal, continue
+    console.error('could not create generation record:', err); // non-fatal, the completion upsert retries it
   }
 
   async function markFailed(message) {
@@ -210,8 +210,10 @@ async function handler(req, res) {
     });
 
     await db.execute({
-      sql: 'UPDATE generations SET status = ?, duration_seconds = ? WHERE id = ?',
-      args: ['completed', actualDuration, jobId]
+      // upsert, so the minutes still count even if the 'processing' row above failed to insert
+      sql: `INSERT INTO generations (id, user_id, original_filename, duration_seconds, status) VALUES (?, ?, ?, ?, 'completed')
+            ON CONFLICT (id) DO UPDATE SET status = 'completed', duration_seconds = EXCLUDED.duration_seconds`,
+      args: [jobId, user.id, originalFilename || null, actualDuration]
     });
 
     return res.status(200).json({ segments, detectedLanguage: whisperData.language || 'unknown', jobId });

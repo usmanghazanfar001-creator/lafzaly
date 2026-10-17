@@ -9,6 +9,7 @@
 const { getDb } = require('./_db');
 const { getSessionUser } = require('./_auth');
 const crypto = require('crypto');
+const { usageKey, limitFor, getTextUsed, addTextUsed } = require('./_usage');
 
 const NON_LATIN = /[\u0600-\u06FF\u0900-\u097F]/;
 const ok = (c) => c && typeof c.hook === 'string' && typeof c.body === 'string' && c.hook && c.body && !NON_LATIN.test(c.hook + c.body);
@@ -19,10 +20,19 @@ async function generate(req, res) {
   const b = req.body || {};
   const topic = String(b.topic || '').trim().slice(0, 300);
   if (topic.length < 4) return res.status(400).json({ error: 'Topic is too short.' });
+  // Daily limit for free users and guests (admins and Pro are unlimited). Enforced here, not in the browser.
+  let user = null; try { user = await getSessionUser(req); } catch {}
+  const key = usageKey(req, user), limit = limitFor(user);
+  let used = 0;
+  if (limit !== null) {
+    try { used = await getTextUsed(key); } catch (e) { console.error('text usage read failed:', e); }
+    if (used >= limit) return res.status(429).json({ error: `Daily free limit reached (${limit}/day). Upgrade to Pro for unlimited captions.`, usage: { used, limit } });
+  }
   const clean = (v, d) => String(v || d).replace(/[^\w &/-]/g, '').slice(0, 40);
   const platform = clean(b.platform, 'Instagram'), type = clean(b.type, 'Other'), tone = clean(b.tone, 'Casual');
   const length = ['Short', 'Medium', 'Long'].includes(b.length) ? b.length : 'Medium';
-  const count = Math.min(Math.max(parseInt(b.count, 10) || 1, 1), 5);
+  let count = Math.min(Math.max(parseInt(b.count, 10) || 1, 1), 5);
+  if (limit !== null) count = Math.min(count, limit - used);
   const words = { Short: '12-25', Medium: '30-55', Long: '60-110' }[length];
   const english = String(b.language || '').toLowerCase() === 'english';
   const promptEn = `You write social media captions for creators and small businesses in Pakistan, in natural, friendly ENGLISH.
@@ -59,7 +69,8 @@ Reply with JSON only: {"captions":[{"hook":"","body":"","cta":"","hashtags":["#.
     hashtags: (Array.isArray(c.hashtags) ? c.hashtags : []).map(h => '#' + String(h).replace(/[^\w]/g, '')).filter(h => h.length > 1).slice(0, 7)
   }));
   if (!caps.length) return res.status(502).json({ error: 'No usable captions returned.' });
-  return res.status(200).json({ captions: caps });
+  if (limit !== null) { try { await addTextUsed(key, caps.length); used += caps.length; } catch (e) { console.error('text usage write failed:', e); } }
+  return res.status(200).json({ captions: caps, usage: { used, limit } });
 }
 
 module.exports = async (req, res) => {
